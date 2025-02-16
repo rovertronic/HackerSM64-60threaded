@@ -79,6 +79,8 @@ typedef f32 Mat2[2][2];
 typedef f32 Mat3[3][3];
 typedef f32 Mat4[4][4];
 
+typedef Vec4f Quat;
+
 // -- Scripts --
 typedef uintptr_t GeoLayout;
 typedef uintptr_t LevelScript;
@@ -234,6 +236,8 @@ struct AnimInfo {
     /*0x0A 0x42*/ u16 animTimer;
     /*0x0C 0x44*/ s32 animFrameAccelAssist;
     /*0x10 0x48*/ s32 animAccel;
+                  f32 animFrameF;
+                  f32 animAccelF;
 };
 
 struct GraphNodeObject {
@@ -244,6 +248,10 @@ struct GraphNodeObject {
     /*0x1A*/ Vec3s angle;
     /*0x20*/ Vec3f pos;
     /*0x2C*/ Vec3f scale;
+             Vec3f posLerp;
+             Vec3f translationLerp;
+             Quat rotLerp;
+             Quat throwRotation;
     /*0x38*/ struct AnimInfo animInfo;
     /*0x4C*/ struct SpawnInfo *spawnInfo;
     /*0x50*/ Mat4 *throwMatrix; // matrix ptr

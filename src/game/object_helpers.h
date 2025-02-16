@@ -81,7 +81,6 @@ struct Object *spawn_object_abs_with_rot(struct Object *parent, s16 uselessArg, 
                                          s16 x, s16 y, s16 z, s16 pitch, s16 yaw, s16 roll);
 struct Object *spawn_object_rel_with_rot(struct Object *parent, ModelID32 model, const BehaviorScript *behavior,
                                          s16 xOff, s16 yOff, s16 zOff, s16 pitch, s16 yaw, s16 roll);
-struct Object *spawn_obj_with_transform_flags(struct Object *parent, ModelID32 model, const BehaviorScript *behavior);
 struct Object *spawn_water_droplet(struct Object *parent, struct WaterDropletParams *params);
 struct Object *spawn_object_at_origin(struct Object *parent, UNUSED s32 unusedArg, ModelID32 model, const BehaviorScript *behavior);
 struct Object *spawn_object(struct Object *parent, ModelID32 model, const BehaviorScript *behavior);
@@ -186,8 +185,8 @@ void obj_set_gfx_pos_at_obj_pos(struct Object *obj1, struct Object *obj2);
 void obj_translate_local(struct Object *obj, s16 posIndex, s16 localTranslateIndex);
 void obj_build_transform_from_pos_and_angle(struct Object *obj, s16 posIndex, s16 angleIndex);
 void obj_set_throw_matrix_from_transform(struct Object *obj);
+void obj_set_throw_matrix_from_transform(struct Object *obj);
 void obj_build_transform_relative_to_parent(struct Object *obj);
-void obj_create_transform_from_self(struct Object *obj);
 void  cur_obj_rotate_face_angle_using_vel(void);
 s32 cur_obj_follow_path_new(void);
 // define is for backwards compatibility (arg used to be useless)
@@ -275,6 +274,8 @@ void enable_time_stop_including_mario(void);
 void disable_time_stop_including_mario(void);
 s32 cur_obj_check_interacted(void);
 void cur_obj_spawn_loot_blue_coin(void);
+void mtxf_object(Mat4 dest, struct Object * obj);
+void mtxf_object_noscale(Mat4 dest, struct Object * obj);
 
 void cur_obj_spawn_star_at_y_offset(f32 targetX, f32 targetY, f32 targetZ, f32 offsetY);
 

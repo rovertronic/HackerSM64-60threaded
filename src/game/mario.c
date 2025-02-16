@@ -83,8 +83,10 @@ s16 set_mario_animation(struct MarioState *m, s32 targetAnimID) {
                 marioObj->header.gfx.animInfo.animFrame = targetAnim->startFrame - 1;
             }
         }
+        marioObj->header.gfx.animInfo.animFrameF = marioObj->header.gfx.animInfo.animFrame;
     }
 
+    marioObj->header.gfx.animInfo.animAccelF = 1.0f;
     return marioObj->header.gfx.animInfo.animFrame;
 }
 
@@ -117,10 +119,11 @@ s16 set_mario_anim_with_accel(struct MarioState *m, s32 targetAnimID, s32 accel)
         }
 
         marioObj->header.gfx.animInfo.animFrame = (marioObj->header.gfx.animInfo.animFrameAccelAssist >> 0x10);
+        marioObj->header.gfx.animInfo.animFrameF = marioObj->header.gfx.animInfo.animFrame;
     }
 
     marioObj->header.gfx.animInfo.animAccel = accel;
-
+    marioObj->header.gfx.animInfo.animAccelF = accel/65536.0f;
     return marioObj->header.gfx.animInfo.animFrame;
 }
 
@@ -143,6 +146,7 @@ void set_anim_to_frame(struct MarioState *m, s16 animFrame) {
         } else {
             animInfo->animFrame = animFrame - 1;
         }
+        animInfo->animFrameF = animInfo->animFrame;
     }
 }
 
@@ -1553,10 +1557,6 @@ void mario_reset_bodystate(struct MarioState *m) {
  */
 void sink_mario_in_quicksand(struct MarioState *m) {
     struct Object *marioObj = m->marioObj;
-
-    if (marioObj->header.gfx.throwMatrix) {
-        (*marioObj->header.gfx.throwMatrix)[3][1] -= m->quicksandDepth;
-    }
 
     marioObj->header.gfx.pos[1] -= m->quicksandDepth;
 }

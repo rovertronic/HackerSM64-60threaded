@@ -325,12 +325,6 @@ struct Object *spawn_object_rel_with_rot(struct Object *parent, ModelID32 model,
     return newObj;
 }
 
-struct Object *spawn_obj_with_transform_flags(struct Object *parent, ModelID32 model, const BehaviorScript *behavior) {
-    struct Object *newObj = spawn_object(parent, model, behavior);
-    newObj->oFlags |= OBJ_FLAG_UPDATE_TRANSFORM_FOR_THROW_MATRIX | OBJ_FLAG_SET_THROW_MATRIX_FROM_TRANSFORM;
-    return newObj;
-}
-
 struct Object *spawn_water_droplet(struct Object *parent, struct WaterDropletParams *params) {
     struct Object *newObj = spawn_object(parent, params->model, params->behavior);
 
@@ -509,8 +503,7 @@ void cur_obj_init_animation_with_sound(s32 animIndex) {
 
 void cur_obj_init_animation_with_accel_and_sound(s32 animIndex, f32 accel) {
     struct Animation **anims = o->oAnimations;
-    s32 animAccel = (s32)(accel * 65536.0f);
-    geo_obj_init_animation_accel(&o->header.gfx, &anims[animIndex], animAccel);
+    geo_obj_init_animation_accel(&o->header.gfx, &anims[animIndex], accel);
     o->oSoundStateID = animIndex;
 }
 
@@ -2189,9 +2182,7 @@ void cur_obj_align_gfx_with_floor(void) {
     if (floor != NULL) {
         Vec3f floorNormal;
         surface_normal_to_vec3f(floorNormal, floor);
-
-        mtxf_align_terrain_normal(o->transform, floorNormal, position, o->oFaceAngleYaw);
-        o->header.gfx.throwMatrix = &o->transform;
+        quat_align_with_floor(o->header.gfx.throwRotation,floorNormal);
     }
 }
 
@@ -2249,6 +2240,7 @@ void obj_copy_behavior_params(struct Object *dst, struct Object *src) {
 void cur_obj_init_animation_and_anim_frame(s32 animIndex, s32 animFrame) {
     cur_obj_init_animation_with_sound(animIndex);
     o->header.gfx.animInfo.animFrame = animFrame;
+    o->header.gfx.animInfo.animFrameF = animFrame;
 }
 
 s32 cur_obj_init_animation_and_check_if_near_end(s32 animIndex) {
@@ -2327,4 +2319,30 @@ void cur_obj_spawn_star_at_y_offset(f32 targetX, f32 targetY, f32 targetZ, f32 o
     o->oPosY += offsetY + gDebugInfo[DEBUG_PAGE_ENEMYINFO][0];
     spawn_default_star(targetX, targetY, targetZ);
     o->oPosY = objectPosY;
+}
+
+void mtxf_object(Mat4 dest, struct Object * obj) {
+    Quat rotation;
+    quat_from_zxy_euler(rotation,obj->header.gfx.angle);
+    quat_mul(rotation,rotation,obj->header.gfx.throwRotation);
+    quat_normalize(rotation);
+
+    mtxf_from_quat(rotation,dest);
+    dest[3][0] += obj->header.gfx.pos[0];
+    dest[3][1] += obj->header.gfx.pos[1];
+    dest[3][2] += obj->header.gfx.pos[2];
+
+    mtxf_scale_vec3f(dest, dest, obj->header.gfx.scale);
+}
+
+void mtxf_object_noscale(Mat4 dest, struct Object * obj) {
+    Quat rotation;
+    quat_from_zxy_euler(rotation,obj->header.gfx.angle);
+    quat_mul(rotation,rotation,obj->header.gfx.throwRotation);
+    quat_normalize(rotation);
+
+    mtxf_from_quat(rotation,dest);
+    dest[3][0] += obj->header.gfx.pos[0];
+    dest[3][1] += obj->header.gfx.pos[1];
+    dest[3][2] += obj->header.gfx.pos[2];
 }

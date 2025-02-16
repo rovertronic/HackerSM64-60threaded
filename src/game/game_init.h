@@ -37,7 +37,9 @@ extern OSMesgQueue gGameVblankQueue;
 extern OSMesgQueue gGfxVblankQueue;
 extern OSMesg gGameMesgBuf[1];
 extern OSMesg gGfxMesgBuf[1];
+extern OSMesg gGraphicsMesgBuf[1];
 extern struct VblankHandler gGameVblankHandler;
+extern struct VblankHandler gGraphicsVblankHandler;
 extern uintptr_t gPhysicalFramebuffers[3];
 extern uintptr_t gPhysicalZBuffer;
 extern void *gMarioAnimsMemAlloc;
@@ -82,6 +84,7 @@ extern u32 gGlobalTimer;
 
 void setup_game_memory(void);
 void thread5_game_loop(UNUSED void *arg);
+void thread10_graphics_loop(UNUSED void *arg);
 void clear_framebuffer(s32 color);
 void clear_viewport(Vp *viewport, s32 color);
 void make_viewport_clip_rect(Vp *viewport);

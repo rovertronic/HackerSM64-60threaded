@@ -569,19 +569,11 @@ void clear_dynamic_surfaces(void) {
  * Applies an object's transformation to the object's vertices.
  */
 void transform_object_vertices(TerrainData **data, TerrainData *vertexData) {
-    Mat4 *objectTransform = &o->transform;
-
     register s32 numVertices = *(*data)++;
-
     register TerrainData *vertices = *data;
 
-    if (o->header.gfx.throwMatrix == NULL) {
-        o->header.gfx.throwMatrix = objectTransform;
-        obj_build_transform_from_pos_and_angle(o, O_POS_INDEX, O_FACE_ANGLE_INDEX);
-    }
-
     Mat4 transform;
-    mtxf_scale_vec3f(transform, *objectTransform, o->header.gfx.scale);
+    mtxf_object(transform,o);
 
     // Go through all vertices, rotating and translating them to transform the object.
     Vec3f pos;
@@ -734,6 +726,7 @@ void load_object_collision_model(void) {
  * Transform an object's vertices and add them to the static surface pool.
  */
 void load_object_static_model(void) {
+    return;
     PUPPYPRINT_GET_SNAPSHOT();
     TerrainData *collisionData = o->collisionData;
     u32 surfacePoolData;

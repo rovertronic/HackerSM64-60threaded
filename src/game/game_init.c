@@ -31,6 +31,9 @@
 #include "vc_ultra.h"
 #include "profiling.h"
 #include "emutest.h"
+#include "frame_lerp.h"
+#include "level_update.h"
+#include <PR/os_internal_reg.h>
 
 // Emulators that the Instant Input patch should not be applied to
 #define INSTANT_INPUT_BLACKLIST (EMU_CONSOLE | EMU_WIIVC | EMU_ARES | EMU_SIMPLE64 | EMU_CEN64)
@@ -57,12 +60,15 @@ s8 gEepromProbe;
 s8 gSramProbe;
 #endif
 OSMesgQueue gGameVblankQueue;
+OSMesgQueue gGraphicsVblankQueue;
 OSMesgQueue gGfxVblankQueue;
+OSMesg gGraphicsMesgBuf[1];
 OSMesg gGameMesgBuf[1];
 OSMesg gGfxMesgBuf[1];
 
 // Vblank Handler
 struct VblankHandler gGameVblankHandler;
+struct VblankHandler gGraphicsVblankHandler;
 
 // Buffers
 uintptr_t gPhysicalFramebuffers[3];
@@ -76,6 +82,7 @@ struct DmaHandlerList gDemoInputsBuf;
 
 // General timer that runs as the game starts
 u32 gGlobalTimer = 0;
+u32 gGraphicsTimer = 0;
 u8 *gAreaSkyboxStart[AREA_COUNT];
 u8 *gAreaSkyboxEnd[AREA_COUNT];
 
@@ -427,18 +434,20 @@ void render_init(void) {
     if (gEmulator & INSTANT_INPUT_BLACKLIST) {
         sRenderingFramebuffer++;
     }
-    gGlobalTimer++;
+    gGraphicsTimer++;
 }
 
 /**
  * Selects the location of the F3D output buffer (gDisplayListHead).
  */
 void select_gfx_pool(void) {
-    gGfxPool = &gGfxPools[gGlobalTimer % ARRAY_COUNT(gGfxPools)];
+    gGfxPool = &gGfxPools[gGraphicsTimer % ARRAY_COUNT(gGfxPools)];
     set_segment_base_addr(SEGMENT_RENDER, gGfxPool->buffer);
     gGfxSPTask = &gGfxPool->spTask;
     gDisplayListHead = gGfxPool->buffer;
     gGfxPoolEnd = (u8 *) (gGfxPool->buffer + GFX_POOL_SIZE);
+
+    gGraphicsTimer ++;
 }
 
 /**
@@ -455,13 +464,8 @@ void display_and_vsync(void) {
         gGoddardVblankCallback = NULL;
     }
     exec_display_list(&gGfxPool->spTask);
-#ifndef UNLOCK_FPS
-    osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
-#endif
     osViSwapBuffer((void *) PHYSICAL_TO_VIRTUAL(gPhysicalFramebuffers[sRenderedFramebuffer]));
-#ifndef UNLOCK_FPS
-    osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
-#endif
+
     // Skip swapping buffers on inaccurate emulators other than VC so that they display immediately as the Gfx task finishes
     if (gEmulator & INSTANT_INPUT_BLACKLIST) {
         if (++sRenderedFramebuffer == 3) {
@@ -471,7 +475,6 @@ void display_and_vsync(void) {
             sRenderingFramebuffer = 0;
         }
     }
-    gGlobalTimer++;
 }
 
 #if !defined(DISABLE_DEMO) && defined(KEEP_MARIO_HEAD)
@@ -735,6 +738,7 @@ void setup_game_memory(void) {
     // Create Mesg Queues
     osCreateMesgQueue(&gGfxVblankQueue, gGfxMesgBuf, ARRAY_COUNT(gGfxMesgBuf));
     osCreateMesgQueue(&gGameVblankQueue, gGameMesgBuf, ARRAY_COUNT(gGameMesgBuf));
+    osCreateMesgQueue(&gGraphicsVblankQueue, gGraphicsMesgBuf, ARRAY_COUNT(gGraphicsMesgBuf));
     // Setup z buffer and framebuffer
     gPhysicalZBuffer = VIRTUAL_TO_PHYSICAL(gZBuffer);
     gPhysicalFramebuffers[0] = VIRTUAL_TO_PHYSICAL(gFramebuffer0);
@@ -788,7 +792,6 @@ void thread5_game_loop(UNUSED void *arg) {
 #ifdef WIDE
     gConfig.widescreen = save_file_get_widescreen_mode();
 #endif
-    render_init();
 
     while (TRUE) {
         profiler_frame_setup();
@@ -810,7 +813,6 @@ void thread5_game_loop(UNUSED void *arg) {
         }
 
         audio_game_loop_tick();
-        select_gfx_pool();
         read_controller_inputs(THREAD_5_GAME_LOOP);
         profiler_update(PROFILER_TIME_CONTROLLERS, 0);
         profiler_collision_reset();
@@ -823,7 +825,6 @@ void thread5_game_loop(UNUSED void *arg) {
         puppyprint_profiler_process();
 #endif
 
-        display_and_vsync();
 #ifdef VANILLA_DEBUG
         // when debug info is enabled, print the "BUF %d" information.
         if (gShowDebugText) {
@@ -832,11 +833,65 @@ void thread5_game_loop(UNUSED void *arg) {
             print_text_fmt_int(180, 20, "BUF %d", gGfxPoolEnd - (u8 *) gDisplayListHead);
         }
 #endif
-#if 0
-        if (gPlayer1Controller->buttonPressed & L_TRIG) {
-            osStartThread(&hvqmThread);
-            osRecvMesg(&gDmaMesgQueue, NULL, OS_MESG_BLOCK);
+        static u8 t10s = FALSE;
+        if (!t10s) {
+            t10s=TRUE;
+            osStartThread(&gGraphicsThread);
         }
-#endif
+
+        gGlobalTimer++;
+        osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+        osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+    }
+}
+
+f32 gDeltaProgress = 0.f;
+void thread10_graphics_loop(UNUSED void *arg) {
+    u32 lastRenderedFrame = 0xFFFFFFFF;
+    u32 prevTime = 0;
+    set_vblank_handler(3, &gGraphicsVblankHandler, &gGraphicsVblankQueue, (OSMesg) 1);
+
+    osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+    osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+
+    render_init();
+    while (gResetTimer == 0) {
+        u32 deltaTime = osGetCount() - prevTime;
+        prevTime = osGetCount();
+        gFrameLerpDeltaTime = (f32)deltaTime/(f32)OS_USEC_TO_CYCLES(33333);
+        gDeltaProgress += gFrameLerpDeltaTime;
+        if (gDeltaProgress > 1.0) {
+            gDeltaProgress -= 1.0f;
+        }
+
+        if (deltaTime < OS_USEC_TO_CYCLES(33333)) { // > 30 fps
+            if (gGlobalTimer == lastRenderedFrame + 1) {
+                gFrameLerpRenderFrame = FRAMELERP_NORMAL;
+            } else {
+                gFrameLerpRenderFrame = FRAMELERP_BETWEEN;
+            }
+        } else if (deltaTime > OS_USEC_TO_CYCLES(66666)) { // < 15fps
+            if (gGlobalTimer == lastRenderedFrame + 1) {
+                gFrameLerpRenderFrame = FRAMELERP_SLOW;
+            } else {
+                gFrameLerpRenderFrame = FRAMELERP_NORMAL;
+            }
+        } else {
+            gFrameLerpRenderFrame = FRAMELERP_NORMAL;
+        }
+        lastRenderedFrame = gGlobalTimer;
+
+        select_gfx_pool();
+        init_rcp(CLEAR_ZBUFFER);
+
+        render_game();
+
+        end_master_display_list();
+        alloc_display_list(0);
+
+        display_and_vsync();
+
+        //osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK); Uncomment for 30 FPS
+        osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
     }
 }
