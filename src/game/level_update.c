@@ -528,6 +528,7 @@ void warp_credits(void) {
     }
 }
 
+extern OSMesgQueue gGraphicsVblankQueue;
 void check_instant_warp(void) {
     s16 cameraAngle;
     struct Surface *floor;
@@ -550,6 +551,8 @@ void check_instant_warp(void) {
             struct InstantWarp *warp = &gCurrentArea->instantWarps[index];
 
             if (warp->id != 0) {
+                osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK); //TODO: Are we sure this is really thread safe?
+
                 gMarioState->pos[0] += warp->displacement[0];
                 gMarioState->pos[1] += warp->displacement[1];
                 gMarioState->pos[2] += warp->displacement[2];

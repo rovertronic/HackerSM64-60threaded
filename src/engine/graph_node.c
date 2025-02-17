@@ -306,6 +306,7 @@ struct GraphNodeObject *init_graph_node_object(struct AllocOnlyPool *pool,
         vec3f_copy(graphNode->posLerp, pos);
         vec3f_copy(graphNode->scale, scale);
         vec3s_copy(graphNode->angle, angle);
+        vec3f_copy(graphNode->scaleLerp, scale);
         quat_identity(graphNode->throwRotation);
         quat_from_zxy_euler(graphNode->rotLerp, angle);
         graphNode->sharedChild = sharedChild;
@@ -703,6 +704,7 @@ void geo_reset_object_node(struct GraphNodeObject *graphNode) {
  */
 void geo_obj_init(struct GraphNodeObject *graphNode, void *sharedChild, Vec3f pos, Vec3s angle) {
     vec3_same(graphNode->scale, 1.0f);
+    vec3_same(graphNode->scaleLerp, 1.0f);
     vec3f_copy(graphNode->pos, pos);
     vec3s_copy(graphNode->angle, angle);
     quat_identity(graphNode->throwRotation);

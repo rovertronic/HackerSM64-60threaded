@@ -1103,6 +1103,9 @@ void geo_process_object(struct Object *node) {
         // Maintain throw matrix pointer if the game is paused as it won't be updated.
         Mat4 *oldThrowMatrix = (sCurrPlayMode == PLAY_MODE_PAUSED) ? node->header.gfx.throwMatrix : NULL;
 
+        frameLerpPos(node->header.gfx.pos,node->header.gfx.posLerp);
+        frameLerpPos(node->header.gfx.scale,node->header.gfx.scaleLerp);
+
         // If the throw matrix is null and the object is invisible, there is no need
         // to update billboarding, scale, rotation, etc. 
         // This still updates translation since it is needed for sound.
@@ -1110,19 +1113,15 @@ void geo_process_object(struct Object *node) {
             mtxf_translate(gMatStack[gMatStackIndex + 1], node->header.gfx.pos);
         }
         else{
-            if (!noThrowMatrix) {
-                mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], *node->header.gfx.throwMatrix, node->header.gfx.scale);
-            } else if (node->header.gfx.node.flags & GRAPH_RENDER_BILLBOARD) {
-                frameLerpPos(node->header.gfx.pos,node->header.gfx.posLerp);
+            if (node->header.gfx.node.flags & GRAPH_RENDER_BILLBOARD) {
                 mtxf_billboard(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex],
-                            node->header.gfx.posLerp, node->header.gfx.scale, gCurGraphNodeCamera->roll);
+                            node->header.gfx.posLerp, node->header.gfx.scaleLerp, gCurGraphNodeCamera->roll);
             } else {
                 Quat finalRot;
                 quat_from_zxy_euler(finalRot,node->header.gfx.angle);
                 quat_mul(finalRot,finalRot,node->header.gfx.throwRotation);
                 quat_normalize(finalRot);
 
-                frameLerpPos(node->header.gfx.pos,node->header.gfx.posLerp);
                 frameLerpRot(finalRot,node->header.gfx.rotLerp);
 
                 quat_normalize(node->header.gfx.rotLerp);
@@ -1132,8 +1131,7 @@ void geo_process_object(struct Object *node) {
                 gMatStack[gMatStackIndex + 1][3][1] += node->header.gfx.posLerp[1];
                 gMatStack[gMatStackIndex + 1][3][2] += node->header.gfx.posLerp[2];
 
-                mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex + 1], node->header.gfx.scale);
-
+                mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex + 1], node->header.gfx.scaleLerp);
             }
         }
 

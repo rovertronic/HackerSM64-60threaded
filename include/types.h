@@ -250,6 +250,7 @@ struct GraphNodeObject {
     /*0x2C*/ Vec3f scale;
              Vec3f posLerp;
              Vec3f translationLerp;
+             Vec3f scaleLerp;
              Quat rotLerp;
              Quat throwRotation;
     /*0x38*/ struct AnimInfo animInfo;

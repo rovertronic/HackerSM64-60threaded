@@ -2321,7 +2321,7 @@ void cur_obj_spawn_star_at_y_offset(f32 targetX, f32 targetY, f32 targetZ, f32 o
     o->oPosY = objectPosY;
 }
 
-void mtxf_object(Mat4 dest, struct Object * obj) {
+void mtxf_object_gfx(Mat4 dest, struct Object * obj) {
     Quat rotation;
     quat_from_zxy_euler(rotation,obj->header.gfx.angle);
     quat_mul(rotation,rotation,obj->header.gfx.throwRotation);
@@ -2331,6 +2331,21 @@ void mtxf_object(Mat4 dest, struct Object * obj) {
     dest[3][0] += obj->header.gfx.pos[0];
     dest[3][1] += obj->header.gfx.pos[1];
     dest[3][2] += obj->header.gfx.pos[2];
+
+    mtxf_scale_vec3f(dest, dest, obj->header.gfx.scale);
+}
+
+void mtxf_object(Mat4 dest, struct Object * obj) {
+    Vec3s euler_rot = {obj->oFaceAnglePitch,obj->oFaceAngleYaw,obj->oFaceAngleRoll};
+    Quat rotation;
+    quat_from_zxy_euler(rotation,euler_rot);
+    quat_mul(rotation,rotation,obj->header.gfx.throwRotation);
+    quat_normalize(rotation);
+
+    mtxf_from_quat(rotation,dest);
+    dest[3][0] += obj->oPosX;
+    dest[3][1] += obj->oPosY;
+    dest[3][2] += obj->oPosZ;
 
     mtxf_scale_vec3f(dest, dest, obj->header.gfx.scale);
 }
