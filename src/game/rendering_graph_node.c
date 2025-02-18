@@ -161,6 +161,7 @@ ALIGNED16 struct GraphNodeRoot *gCurGraphNodeRoot = NULL;
 ALIGNED16 struct GraphNodeMasterList *gCurGraphNodeMasterList = NULL;
 ALIGNED16 struct GraphNodePerspective *gCurGraphNodeCamFrustum = NULL;
 ALIGNED16 struct GraphNodeCamera *gCurGraphNodeCamera = NULL;
+ALIGNED16 struct GraphNodeCamera *gPrevGraphNodeCamera = NULL;
 ALIGNED16 struct GraphNodeObject *gCurGraphNodeObject = NULL;
 ALIGNED16 struct GraphNodeHeldObject *gCurGraphNodeHeldObject = NULL;
 u16 gAreaUpdateCounter = 0;
@@ -612,6 +613,7 @@ void geo_process_camera(struct GraphNodeCamera *node) {
 
     if (node->fnNode.node.children != 0) {
         gCurGraphNodeCamera = node;
+        gPrevGraphNodeCamera = node;
         node->matrixPtr = &gCameraTransform;
         geo_process_node_and_siblings(node->fnNode.node.children);
         gCurGraphNodeCamera = NULL;
