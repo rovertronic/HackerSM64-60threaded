@@ -470,7 +470,6 @@ struct MarioState {
 
              struct Animation * queueTargetAnim;
              s32 queueTargetAnimID;
-             s32 queueTargetAnimNormalOrAccel;
              s32 queueTargetAnimAccel;
     // -- HackerSM64 MarioState fields end --
 };

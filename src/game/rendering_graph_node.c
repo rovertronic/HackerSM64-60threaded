@@ -900,6 +900,7 @@ void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation, struct O
 
     if ((obj == gMarioState->marioObj)&&(gMarioState->queueTargetAnim != NULL)) {
         struct Animation * targetAnim = gMarioState->queueTargetAnim;
+        anim = targetAnim;
         s32 targetAnimID = gMarioState->queueTargetAnimID;
         if (load_patchable_table(gMarioState->animList[ANIM_LIST_GFX], targetAnimID)) {
             targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
@@ -1148,9 +1149,12 @@ void geo_process_object(struct Object *node) {
                             node->header.gfx.posLerp, node->header.gfx.scaleLerp, gCurGraphNodeCamera->roll);
             } else {
                 Quat finalRot;
-                quat_from_zxy_euler(finalRot,node->header.gfx.angle);
+                Quat initialRot;
+                quat_from_zxy_euler(initialRot,node->header.gfx.angle);
                 if (node->oFlags & OBJ_FLAG_THROW_ROTATION) {
-                    quat_mul(finalRot,finalRot,node->header.gfx.throwRotation);
+                    quat_mul(finalRot,initialRot,node->header.gfx.throwRotation);
+                } else {
+                    quat_copy(finalRot,initialRot);
                 }
                 quat_normalize(finalRot);
 
