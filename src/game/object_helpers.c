@@ -2340,6 +2340,8 @@ void mtxf_object(Mat4 dest, struct Object * obj) {
     quat_from_zxy_euler(rotation,euler_rot);
     if (obj->oFlags & OBJ_FLAG_THROW_ROTATION) {
         quat_mul(finalRot,rotation,obj->header.gfx.throwRotation);
+    } else {
+        quat_copy(finalRot,rotation);
     }
     quat_normalize(finalRot);
 
@@ -2355,7 +2357,11 @@ void mtxf_object_noscale(Mat4 dest, struct Object * obj) {
     Quat rotation;
     Quat finalRot;
     quat_from_zxy_euler(rotation,obj->header.gfx.angle);
-    quat_mul(finalRot,rotation,obj->header.gfx.throwRotation);
+    if (obj->oFlags & OBJ_FLAG_THROW_ROTATION) {
+        quat_mul(finalRot,rotation,obj->header.gfx.throwRotation);
+    } else {
+        quat_copy(finalRot,rotation);
+    }
     quat_normalize(finalRot);
 
     mtxf_from_quat(finalRot,dest);
