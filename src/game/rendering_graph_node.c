@@ -1119,9 +1119,7 @@ void visualise_object_hitbox(struct Object *node) {
 void geo_process_object(struct Object *node) {
     if (node->header.gfx.areaIndex == gCurGraphNodeRoot->areaIndex) {
         s32 isInvisible = (node->header.gfx.node.flags & GRAPH_RENDER_INVISIBLE);
-        s32 noThrowMatrix = (node->header.gfx.throwMatrix == NULL);
         // Maintain throw matrix pointer if the game is paused as it won't be updated.
-        Mat4 *oldThrowMatrix = (sCurrPlayMode == PLAY_MODE_PAUSED) ? node->header.gfx.throwMatrix : NULL;
 
         frameLerpPos(node->header.gfx.pos,node->header.gfx.posLerp);
         frameLerpPos(node->header.gfx.scale,node->header.gfx.scaleLerp);
@@ -1129,7 +1127,7 @@ void geo_process_object(struct Object *node) {
         // If the throw matrix is null and the object is invisible, there is no need
         // to update billboarding, scale, rotation, etc. 
         // This still updates translation since it is needed for sound.
-        if (isInvisible && noThrowMatrix) {
+        if (isInvisible) {
             mtxf_translate(gMatStack[gMatStackIndex + 1], node->header.gfx.pos);
         }
         else{
@@ -1157,8 +1155,8 @@ void geo_process_object(struct Object *node) {
             }
         }
 
-        node->header.gfx.throwMatrix = &gMatStack[++gMatStackIndex];
-        linear_mtxf_mul_vec3f_and_translate(gCameraTransform, node->header.gfx.cameraToObject, (*node->header.gfx.throwMatrix)[3]);
+        gMatStackIndex++;
+        linear_mtxf_mul_vec3f_and_translate(gCameraTransform, node->header.gfx.cameraToObject, node->header.gfx.pos);
 
         // FIXME: correct types
         if (node->header.gfx.animInfo.curAnim != NULL) {
@@ -1186,7 +1184,6 @@ void geo_process_object(struct Object *node) {
 
         gMatStackIndex--;
         gCurrAnimType = ANIM_TYPE_NONE;
-        node->header.gfx.throwMatrix = oldThrowMatrix;
     }
 }
 
@@ -1225,7 +1222,7 @@ void geo_process_held_object(struct GraphNodeHeldObject *node) {
         vec3_scale_dest(translation, node->translation, 0.25f);
 
         mtxf_translate(mat, translation);
-        mtxf_copy(gMatStack[gMatStackIndex + 1], *gCurGraphNodeObject->throwMatrix);
+        mtxf_object(gMatStack[gMatStackIndex + 1], (struct Object *)gCurGraphNodeObject);
         vec3f_copy(gMatStack[gMatStackIndex + 1][3], gMatStack[gMatStackIndex][3]);
         mtxf_copy(tempMtx, gMatStack[gMatStackIndex + 1]);
         mtxf_mul(gMatStack[gMatStackIndex + 1], mat, tempMtx);
@@ -1323,10 +1320,6 @@ void geo_process_node_and_siblings(struct GraphNode *firstNode) {
                 geo_try_process_children(curGraphNode);
             } else {
                 GeoProcessJumpTable[curGraphNode->type](curGraphNode);
-            }
-        } else {
-            if (curGraphNode->type == GRAPH_NODE_TYPE_OBJECT) {
-                ((struct GraphNodeObject *) curGraphNode)->throwMatrix = NULL;
             }
         }
     } while (iterateChildren && (curGraphNode = curGraphNode->next) != firstNode);

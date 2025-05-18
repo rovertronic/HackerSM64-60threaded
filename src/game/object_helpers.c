@@ -1524,8 +1524,6 @@ void obj_set_throw_matrix_from_transform(struct Object *obj) {
         obj_apply_scale_to_transform(obj);
     }
 
-    obj->header.gfx.throwMatrix = &obj->transform;
-
     obj_scale(obj, 1.0f);
 }
 
@@ -1537,8 +1535,6 @@ void obj_build_transform_relative_to_parent(struct Object *obj) {
     mtxf_mul(obj->transform, obj->transform, parent->transform);
 
     vec3f_copy(&obj->oPosVec, obj->transform[3]);
-
-    obj->header.gfx.throwMatrix = &obj->transform;
 
     obj_scale(obj, 1.0f);
 }

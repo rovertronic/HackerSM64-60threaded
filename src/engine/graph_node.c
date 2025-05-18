@@ -310,7 +310,7 @@ struct GraphNodeObject *init_graph_node_object(struct AllocOnlyPool *pool,
         quat_identity(graphNode->throwRotation);
         quat_from_zxy_euler(graphNode->rotLerp, angle);
         graphNode->sharedChild = sharedChild;
-        graphNode->throwMatrix = NULL;
+
         graphNode->animInfo.animID = 0;
         graphNode->animInfo.curAnim = NULL;
         graphNode->animInfo.animFrame = 0;
@@ -714,7 +714,6 @@ void geo_obj_init(struct GraphNodeObject *graphNode, void *sharedChild, Vec3f po
 
     graphNode->sharedChild = sharedChild;
     graphNode->spawnInfo = 0;
-    graphNode->throwMatrix = NULL;
     graphNode->animInfo.curAnim = NULL;
 
     graphNode->node.flags |=  GRAPH_RENDER_ACTIVE;
@@ -736,7 +735,6 @@ void geo_obj_init_spawninfo(struct GraphNodeObject *graphNode, struct SpawnInfo 
     graphNode->activeAreaIndex = spawn->activeAreaIndex;
     graphNode->sharedChild = spawn->model;
     graphNode->spawnInfo = spawn;
-    graphNode->throwMatrix = NULL;
     graphNode->animInfo.curAnim = 0;
 
     graphNode->node.flags |= GRAPH_RENDER_ACTIVE;
