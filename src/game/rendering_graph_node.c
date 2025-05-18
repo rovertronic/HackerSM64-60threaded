@@ -839,8 +839,6 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
         translation[1] += retrive_anim_translation_component(gCurrAnimFrameF);
         translation[2] += retrive_anim_translation_component(gCurrAnimFrameF);
 
-        frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
-        vec3f_copy(translation,gCurGraphNodeObject->translationLerp);
         gCurrAnimBoneIndex++;
 
         gCurrAnimType = ANIM_TYPE_ROTATION;
@@ -850,8 +848,6 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
             gCurrAnimAttribute += 2;
             translation[2] += retrive_anim_translation_component(gCurrAnimFrameF);
 
-            frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
-            vec3f_copy(translation,gCurGraphNodeObject->translationLerp);
             gCurrAnimBoneIndex++;
 
             gCurrAnimType = ANIM_TYPE_ROTATION;
@@ -861,8 +857,6 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
                 translation[1] += retrive_anim_translation_component(gCurrAnimFrameF);
                 gCurrAnimAttribute += 2;
 
-                frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
-                vec3f_copy(translation,gCurGraphNodeObject->translationLerp);
                 gCurrAnimBoneIndex++;
 
                 gCurrAnimType = ANIM_TYPE_ROTATION;
@@ -1257,10 +1251,13 @@ void geo_process_held_object(struct GraphNodeHeldObject *node) {
         gGeoTempState.translationMultiplier = gCurrAnimTranslationMultiplier;
         gGeoTempState.attribute = gCurrAnimAttribute;
         gGeoTempState.data = gCurrAnimData;
+        s16 tempLoopEnd = gCurrAnimLoopEnd;
+        s16 tempAnimBoneIndex = gCurrAnimBoneIndex;
+        f32 tempAnimFrameF = gCurrAnimFrameF;
         gCurrAnimType = ANIM_TYPE_NONE;
         gCurGraphNodeHeldObject = (void *) node;
         if (node->objNode->header.gfx.animInfo.curAnim != NULL) {
-            geo_set_animation_globals(&node->objNode->header.gfx.animInfo, (node->objNode->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0, (struct Object *)gCurGraphNodeObject);
+            geo_set_animation_globals(&node->objNode->header.gfx.animInfo, (node->objNode->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0, node->objNode);
         }
 
         geo_process_node_and_siblings(node->objNode->header.gfx.sharedChild);
@@ -1271,6 +1268,9 @@ void geo_process_held_object(struct GraphNodeHeldObject *node) {
         gCurrAnimTranslationMultiplier = gGeoTempState.translationMultiplier;
         gCurrAnimAttribute = gGeoTempState.attribute;
         gCurrAnimData = gGeoTempState.data;
+        gCurrAnimLoopEnd = tempLoopEnd;
+        gCurrAnimBoneIndex = tempAnimBoneIndex;
+        gCurrAnimFrameF = tempAnimFrameF;
         gMatStackIndex--;
     }
 
