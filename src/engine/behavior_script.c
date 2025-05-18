@@ -821,6 +821,10 @@ void cur_obj_update(void) {
 
     s32 inRoom = cur_obj_is_mario_in_room();
 
+    if (objFlags & OBJ_FLAG_THROW_ROTATION) {
+        o->oFlags &= ~OBJ_FLAG_THROW_ROTATION;
+    }
+
     if (inRoom == MARIO_OUTSIDE_ROOM && (objFlags & OBJ_FLAG_ONLY_PROCESS_INSIDE_ROOM)) {
         cur_obj_disable_rendering_in_room();
         return;

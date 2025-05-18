@@ -199,6 +199,7 @@ void obj_orient_graph(struct Object *obj, f32 normalX, f32 normalY, f32 normalZ)
 
     vec3f_set(surfaceNormals, normalX, normalY, normalZ);
     quat_align_with_floor(obj->header.gfx.throwRotation,surfaceNormals);
+    obj->oFlags |= OBJ_FLAG_THROW_ROTATION;
 }
 
 /**

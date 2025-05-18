@@ -2183,6 +2183,7 @@ void cur_obj_align_gfx_with_floor(void) {
         Vec3f floorNormal;
         surface_normal_to_vec3f(floorNormal, floor);
         quat_align_with_floor(o->header.gfx.throwRotation,floorNormal);
+        o->oFlags |= OBJ_FLAG_THROW_ROTATION;
     }
 }
 

@@ -36,4 +36,5 @@ void bhv_tilting_inverted_pyramid_loop(void) {
     approach_f32_symmetric_bool(&o->oTiltingPyramidNormalZ, targetNormal[2], 0.01f);
 
     quat_align_with_floor(o->header.gfx.throwRotation,&o->oTiltingPyramidNormalVec);
+    o->oFlags |= OBJ_FLAG_THROW_ROTATION;
 }

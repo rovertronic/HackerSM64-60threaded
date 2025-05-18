@@ -18,6 +18,7 @@
 #include "string.h"
 #include "color_presets.h"
 #include "emutest.h"
+#include "level_geo.h"
 
 #include "config.h"
 #include "config/config_world.h"
@@ -74,6 +75,7 @@ struct GeoAnimState gGeoTempState;
 u8 gCurrAnimType;
 u8 gCurrAnimEnabled;
 s16 gCurrAnimFrame;
+s16 gCurrAnimLoopEnd;
 f32 gCurrAnimTranslationMultiplier;
 u16 *gCurrAnimAttribute;
 s16 *gCurrAnimData;
@@ -575,6 +577,8 @@ void geo_process_camera(struct GraphNodeCamera *node) {
     gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(rollMtx), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 
     mtxf_lookat(gCameraTransform, frameLerpPos(node->pos,node->posLerp), frameLerpPos(node->focus,node->focLerp), node->roll);
+    vec3f_copy(gSkyboxCameraPos,node->posLerp);
+    vec3f_copy(gSkyboxCameraFoc,node->focLerp);
 
     // Calculate the lookAt
 #ifdef F3DEX_GBI_2
@@ -613,7 +617,6 @@ void geo_process_camera(struct GraphNodeCamera *node) {
 
     if (node->fnNode.node.children != 0) {
         gCurGraphNodeCamera = node;
-        gPrevGraphNodeCamera = node;
         node->matrixPtr = &gCameraTransform;
         geo_process_node_and_siblings(node->fnNode.node.children);
         gCurGraphNodeCamera = NULL;
@@ -775,6 +778,14 @@ void retrieve_anim_quat(Quat dest, f32 frame) {
     Vec3s euler_start;
     Vec3s euler_end;
 
+    if (f >= gCurrAnimLoopEnd) {
+        euler_start[0] = gCurrAnimData[retrieve_animation_index(gCurrAnimLoopEnd,&gCurrAnimAttribute)];
+        euler_start[1] = gCurrAnimData[retrieve_animation_index(gCurrAnimLoopEnd,&gCurrAnimAttribute)];
+        euler_start[2] = gCurrAnimData[retrieve_animation_index(gCurrAnimLoopEnd,&gCurrAnimAttribute)];
+        quat_from_xyz_euler(dest,euler_start);
+        return;
+    }
+
     euler_start[0] = gCurrAnimData[retrieve_animation_index(f,&gCurrAnimAttribute)];
     euler_start[1] = gCurrAnimData[retrieve_animation_index(f,&gCurrAnimAttribute)];
     euler_start[2] = gCurrAnimData[retrieve_animation_index(f,&gCurrAnimAttribute)];
@@ -794,6 +805,21 @@ void retrieve_anim_quat(Quat dest, f32 frame) {
     quat_slerp(dest,rot_start,rot_end,r);
 }
 
+f32 retrive_anim_translation_component(f32 frame) {
+    s32 f = (s32)frame;
+    f32 r = frame-(s32)f;
+
+    if (f >= gCurrAnimLoopEnd) {
+        return gCurrAnimData[retrieve_animation_index(f, &gCurrAnimAttribute)] * gCurrAnimTranslationMultiplier;
+    }
+
+    f32 a = gCurrAnimData[retrieve_animation_index(f, &gCurrAnimAttribute)] * gCurrAnimTranslationMultiplier;
+    gCurrAnimAttribute -= 2;
+    f32 b = gCurrAnimData[retrieve_animation_index(f+1, &gCurrAnimAttribute)] * gCurrAnimTranslationMultiplier;
+
+    return (1.0f - r) * a + r * b;
+}
+
 /**
  * Render an animated part. The current animation state is not part of the node
  * but set in global variables. If an animated part is skipped, everything afterwards desyncs.
@@ -808,12 +834,9 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
     mtxf_identity(transMat);
 
     if (gCurrAnimType == ANIM_TYPE_TRANSLATION) {
-        translation[0] += gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                          * gCurrAnimTranslationMultiplier;
-        translation[1] += gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                          * gCurrAnimTranslationMultiplier;
-        translation[2] += gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                          * gCurrAnimTranslationMultiplier;
+        translation[0] += retrive_anim_translation_component(gCurrAnimFrameF);
+        translation[1] += retrive_anim_translation_component(gCurrAnimFrameF);
+        translation[2] += retrive_anim_translation_component(gCurrAnimFrameF);
 
         frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
         vec3f_copy(translation,gCurGraphNodeObject->translationLerp);
@@ -822,13 +845,9 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
         gCurrAnimType = ANIM_TYPE_ROTATION;
     } else {
         if (gCurrAnimType == ANIM_TYPE_LATERAL_TRANSLATION) {
-            translation[0] +=
-                gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                * gCurrAnimTranslationMultiplier;
+            translation[0] += retrive_anim_translation_component(gCurrAnimFrameF);
             gCurrAnimAttribute += 2;
-            translation[2] +=
-                gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                * gCurrAnimTranslationMultiplier;
+            translation[2] += retrive_anim_translation_component(gCurrAnimFrameF);
 
             frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
             vec3f_copy(translation,gCurGraphNodeObject->translationLerp);
@@ -838,9 +857,7 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
         } else {
             if (gCurrAnimType == ANIM_TYPE_VERTICAL_TRANSLATION) {
                 gCurrAnimAttribute += 2;
-                translation[1] +=
-                    gCurrAnimData[retrieve_animation_index(gCurrAnimFrame, &gCurrAnimAttribute)]
-                    * gCurrAnimTranslationMultiplier;
+                translation[1] += retrive_anim_translation_component(gCurrAnimFrameF);
                 gCurrAnimAttribute += 2;
 
                 frameLerpPos(translation,gCurGraphNodeObject->translationLerp);
@@ -896,6 +913,7 @@ void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation) {
     }
 
     gCurrAnimFrame = node->animFrame;
+    gCurrAnimLoopEnd = node->curAnim->loopEnd-1;
     gCurrAnimEnabled = (anim->flags & ANIM_FLAG_DISABLED) == 0;
     gCurrAnimAttribute = segmented_to_virtual((void *) anim->index);
     gCurrAnimData = segmented_to_virtual((void *) anim->values);
@@ -1121,7 +1139,9 @@ void geo_process_object(struct Object *node) {
             } else {
                 Quat finalRot;
                 quat_from_zxy_euler(finalRot,node->header.gfx.angle);
-                quat_mul(finalRot,finalRot,node->header.gfx.throwRotation);
+                if (node->oFlags & OBJ_FLAG_THROW_ROTATION) {
+                    quat_mul(finalRot,finalRot,node->header.gfx.throwRotation);
+                }
                 quat_normalize(finalRot);
 
                 frameLerpRot(finalRot,node->header.gfx.rotLerp);
@@ -1167,10 +1187,6 @@ void geo_process_object(struct Object *node) {
         gMatStackIndex--;
         gCurrAnimType = ANIM_TYPE_NONE;
         node->header.gfx.throwMatrix = oldThrowMatrix;
-
-        if (gFrameLerpRenderFrame == FRAMELERP_NORMAL) {
-            quat_identity(node->header.gfx.throwRotation);
-        }
     }
 }
 
