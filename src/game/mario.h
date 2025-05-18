@@ -53,4 +53,9 @@ s32 execute_mario_action(UNUSED struct Object *obj);
 void init_mario(void);
 void init_mario_from_save_file(void);
 
+enum {
+    ANIM_LIST_GFX,
+    ANIM_LIST_LOGIC
+};
+
 #endif // MARIO_H

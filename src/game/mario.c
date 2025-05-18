@@ -61,16 +61,21 @@ s32 is_anim_past_end(struct MarioState *m) {
  */
 s16 set_mario_animation(struct MarioState *m, s32 targetAnimID) {
     struct Object *marioObj = m->marioObj;
-    struct Animation *targetAnim = m->animList->bufTarget;
+    struct Animation *targetAnim = m->animList[ANIM_LIST_GFX]->bufTarget;
+    
+    m->queueTargetAnimID = targetAnimID;
+    m->queueTargetAnim = targetAnim;
+    m->queueTargetAnimNormalOrAccel = 0;
 
-    if (load_patchable_table(m->animList, targetAnimID)) {
+    targetAnim = m->animList[ANIM_LIST_LOGIC]->bufTarget;
+    if (load_patchable_table(gMarioState->animList[ANIM_LIST_LOGIC], targetAnimID)) {
         targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
         targetAnim->index  = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
     }
 
     if (marioObj->header.gfx.animInfo.animID != targetAnimID) {
         marioObj->header.gfx.animInfo.animID = targetAnimID;
-        marioObj->header.gfx.animInfo.curAnim = targetAnim;
+        marioObj->header.gfx.animInfo.curAnim = m->animList[ANIM_LIST_GFX]->bufTarget;
         marioObj->header.gfx.animInfo.animAccel = 0;
         marioObj->header.gfx.animInfo.animYTrans = m->animYTrans;
 
@@ -96,16 +101,22 @@ s16 set_mario_animation(struct MarioState *m, s32 targetAnimID) {
  */
 s16 set_mario_anim_with_accel(struct MarioState *m, s32 targetAnimID, s32 accel) {
     struct Object *marioObj = m->marioObj;
-    struct Animation *targetAnim = m->animList->bufTarget;
+    struct Animation *targetAnim = m->animList[ANIM_LIST_GFX]->bufTarget;
 
-    if (load_patchable_table(m->animList, targetAnimID)) {
+    m->queueTargetAnimID = targetAnimID;
+    m->queueTargetAnim = targetAnim;
+    m->queueTargetAnimNormalOrAccel = 1;
+
+    targetAnim = m->animList[ANIM_LIST_LOGIC]->bufTarget;
+
+    if (load_patchable_table(gMarioState->animList[ANIM_LIST_LOGIC], targetAnimID)) {
         targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
-        targetAnim->index = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
+        targetAnim->index  = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
     }
 
     if (marioObj->header.gfx.animInfo.animID != targetAnimID) {
         marioObj->header.gfx.animInfo.animID = targetAnimID;
-        marioObj->header.gfx.animInfo.curAnim = targetAnim;
+        marioObj->header.gfx.animInfo.curAnim = m->animList[ANIM_LIST_GFX]->bufTarget;
         marioObj->header.gfx.animInfo.animYTrans = m->animYTrans;
 
         if (targetAnim->flags & ANIM_FLAG_NO_ACCEL) {
@@ -1878,7 +1889,8 @@ void init_mario_from_save_file(void) {
     gMarioState->statusForCamera = &gPlayerCameraState[0];
     gMarioState->marioBodyState = &gBodyStates[0];
     gMarioState->controller = &gControllers[0];
-    gMarioState->animList = &gMarioAnimsBuf;
+    gMarioState->animList[ANIM_LIST_GFX] = &gMarioAnimsBuf[ANIM_LIST_GFX];
+    gMarioState->animList[ANIM_LIST_LOGIC] = &gMarioAnimsBuf[ANIM_LIST_LOGIC];
 
     gMarioState->numCoins = 0;
     gMarioState->numStars = save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1);

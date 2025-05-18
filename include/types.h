@@ -434,7 +434,7 @@ struct MarioState {
     /*0x94*/ struct PlayerCameraState *statusForCamera;
     /*0x98*/ struct MarioBodyState *marioBodyState;
     /*0x9C*/ struct Controller *controller;
-    /*0xA0*/ struct DmaHandlerList *animList;
+    /*0xA0*/ struct DmaHandlerList *animList[2];
     /*0xA4*/ u32 collidedObjInteractTypes;
     /*0xA8*/ s16 numCoins;
     /*0xAA*/ s16 numStars;
@@ -467,6 +467,11 @@ struct MarioState {
              s16 moveYaw;
              s16 ceilYaw;
              s16 wallYaw;
+
+             struct Animation * queueTargetAnim;
+             s32 queueTargetAnimID;
+             s32 queueTargetAnimNormalOrAccel;
+             s32 queueTargetAnimAccel;
     // -- HackerSM64 MarioState fields end --
 };
 

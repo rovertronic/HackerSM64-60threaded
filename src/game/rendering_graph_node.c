@@ -19,6 +19,7 @@
 #include "color_presets.h"
 #include "emutest.h"
 #include "level_geo.h"
+#include "mario.h"
 
 #include "config.h"
 #include "config/config_world.h"
@@ -894,8 +895,19 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
  * Initialize the animation-related global variables for the currently drawn
  * object's animation.
  */
-void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation) {
+void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation, struct Object * obj) {
     struct Animation *anim = node->curAnim;
+
+    if ((obj == gMarioState->marioObj)&&(gMarioState->queueTargetAnim != NULL)) {
+        struct Animation * targetAnim = gMarioState->queueTargetAnim;
+        s32 targetAnimID = gMarioState->queueTargetAnimID;
+        if (load_patchable_table(gMarioState->animList[ANIM_LIST_GFX], targetAnimID)) {
+            targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
+            targetAnim->index  = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
+        }
+
+        gMarioState->queueTargetAnim = NULL;
+    }
 
     if (hasAnimation) {
         node->animFrame = geo_update_animation_frame(node, &node->animFrameAccelAssist);
@@ -1160,7 +1172,7 @@ void geo_process_object(struct Object *node) {
 
         // FIXME: correct types
         if (node->header.gfx.animInfo.curAnim != NULL) {
-            geo_set_animation_globals(&node->header.gfx.animInfo, (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0);
+            geo_set_animation_globals(&node->header.gfx.animInfo, (node->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0, node);
         }
 
         if (!isInvisible && obj_is_in_view(&node->header.gfx)) {
@@ -1242,7 +1254,7 @@ void geo_process_held_object(struct GraphNodeHeldObject *node) {
         gCurrAnimType = ANIM_TYPE_NONE;
         gCurGraphNodeHeldObject = (void *) node;
         if (node->objNode->header.gfx.animInfo.curAnim != NULL) {
-            geo_set_animation_globals(&node->objNode->header.gfx.animInfo, (node->objNode->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0);
+            geo_set_animation_globals(&node->objNode->header.gfx.animInfo, (node->objNode->header.gfx.node.flags & GRAPH_RENDER_HAS_ANIMATION) != 0, (struct Object *)gCurGraphNodeObject);
         }
 
         geo_process_node_and_siblings(node->objNode->header.gfx.sharedChild);
