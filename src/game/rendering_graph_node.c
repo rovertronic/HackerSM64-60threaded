@@ -898,16 +898,18 @@ void geo_process_animated_part(struct GraphNodeAnimatedPart *node) {
 void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation, struct Object * obj) {
     struct Animation *anim = node->curAnim;
 
-    if ((obj == gMarioState->marioObj)&&(gMarioState->queueTargetAnim != NULL)) {
-        struct Animation * targetAnim = gMarioState->queueTargetAnim;
-        anim = targetAnim;
-        s32 targetAnimID = gMarioState->queueTargetAnimID;
-        if (load_patchable_table(gMarioState->animList[ANIM_LIST_GFX], targetAnimID)) {
-            targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
-            targetAnim->index  = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
-        }
+    if (obj == gMarioState->marioObj) {
+        if (gMarioState->queueTargetAnim != NULL) {
+            struct Animation * targetAnim = gMarioState->queueTargetAnim;
+            s32 targetAnimID = gMarioState->queueTargetAnimID;
+            if (load_patchable_table(gMarioState->animList[ANIM_LIST_GFX], targetAnimID)) {
+                targetAnim->values = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->values);
+                targetAnim->index  = (void *) VIRTUAL_TO_PHYSICAL((u8 *) targetAnim + (uintptr_t) targetAnim->index);
+            }
 
-        gMarioState->queueTargetAnim = NULL;
+            gMarioState->queueTargetAnim = NULL;
+        }
+        anim = gMarioState->animList[ANIM_LIST_GFX]->bufTarget;
     }
 
     if (hasAnimation) {

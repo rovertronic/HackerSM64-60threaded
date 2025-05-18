@@ -433,6 +433,7 @@ struct MarioState {
     /*0x90*/ struct Area *area;
     /*0x94*/ struct PlayerCameraState *statusForCamera;
     /*0x98*/ struct MarioBodyState *marioBodyState;
+             struct MarioBodyState *marioGfxBodyState;
     /*0x9C*/ struct Controller *controller;
     /*0xA0*/ struct DmaHandlerList *animList[2];
     /*0xA4*/ u32 collidedObjInteractTypes;
