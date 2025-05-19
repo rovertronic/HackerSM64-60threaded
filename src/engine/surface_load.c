@@ -15,6 +15,7 @@
 #include "surface_load.h"
 #include "game/puppyprint.h"
 #include "game/debug.h"
+#include <PR/os_internal_reg.h>
 
 #include "config.h"
 
@@ -475,6 +476,7 @@ u32 get_area_terrain_size(TerrainData *data) {
  * boxes (water, gas, JRB fog).
  */
 void load_area_terrain(s32 index, TerrainData *data, RoomData *surfaceRooms, s16 *macroObjects) {
+    u32 mask = __osDisableInt();
     PUPPYPRINT_GET_SNAPSHOT();
     s32 terrainLoadType;
     TerrainData *vertexData = NULL;
@@ -539,6 +541,7 @@ void load_area_terrain(s32 index, TerrainData *data, RoomData *surfaceRooms, s16
     gNumStaticSurfaceNodes = gSurfaceNodesAllocated;
     gNumStaticSurfaces = gSurfacesAllocated;
     profiler_collision_update(first);
+    __osRestoreInt(mask);
 }
 
 /**
@@ -726,7 +729,7 @@ void load_object_collision_model(void) {
  * Transform an object's vertices and add them to the static surface pool.
  */
 void load_object_static_model(void) {
-    return;
+    u32 mask = __osDisableInt();
     PUPPYPRINT_GET_SNAPSHOT();
     TerrainData *collisionData = o->collisionData;
     u32 surfacePoolData;
@@ -752,4 +755,6 @@ void load_object_static_model(void) {
     gNumStaticSurfaceNodes = gSurfaceNodesAllocated;
     gNumStaticSurfaces = gSurfacesAllocated;
     profiler_collision_update(first);
+
+    __osRestoreInt(mask);
 }
