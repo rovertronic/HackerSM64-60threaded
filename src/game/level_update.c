@@ -1008,12 +1008,6 @@ void basic_update(void) {
 }
 
 s32 play_mode_normal(void) {
-    gMenuOptSelectIndex = logic_menus_and_dialogs();
-
-    if (gMenuOptSelectIndex != 0) {
-        gSaveOptSelectIndex = gMenuOptSelectIndex;
-    }
-
 #ifndef DISABLE_DEMO
     if (gCurrDemoInput != NULL) {
         print_intro_text();
@@ -1085,8 +1079,6 @@ s32 play_mode_normal(void) {
 }
 
 s32 play_mode_paused(void) {
-    gMenuOptSelectIndex = logic_menus_and_dialogs();
-    
     if (gMenuOptSelectIndex == MENU_OPT_NONE) {
         set_menu_mode(MENU_MODE_RENDER_PAUSE_SCREEN);
     } else if (gMenuOptSelectIndex == MENU_OPT_DEFAULT) {
@@ -1213,6 +1205,12 @@ UNUSED static s32 play_mode_unused(void) {
 
 s32 update_level(void) {
     s32 changeLevel = FALSE;
+
+    gMenuOptSelectIndex = logic_menus_and_dialogs();
+
+    if (gMenuOptSelectIndex != 0) {
+        gSaveOptSelectIndex = gMenuOptSelectIndex;
+    }
 
     switch (sCurrPlayMode) {
         case PLAY_MODE_NORMAL:

@@ -125,6 +125,7 @@ f32 gDialogBoxGfxOpenTimer = DEFAULT_DIALOG_BOX_ANGLE;
 f32 gDialogBoxScale = DEFAULT_DIALOG_BOX_SCALE;
 f32 gDialogBoxGfxScale = DEFAULT_DIALOG_BOX_SCALE;
 s16 gDialogScrollOffsetY = 0;
+f32 gDialogGfxScrollOffsetY = 0.0f;
 s8 gDialogBoxType = DIALOG_TYPE_ROTATE;
 s16 gDialogID = DIALOG_NONE;
 s16 gLastDialogPageStrPos = 0;
@@ -906,7 +907,12 @@ void handle_dialog_text_and_pages(s8 colorMode, struct DialogEntry *dialog, s8 l
     strIdx = gDialogTextPos;
 
     if (gDialogBoxState == DIALOG_STATE_HORIZONTAL) {
-        create_dl_translation_matrix(MENU_MTX_NOPUSH, 0, (f32) gDialogScrollOffsetY, 0);
+        
+        if (gFrameLerpRenderFrame == FRAMELERP_BETWEEN) {
+            create_dl_translation_matrix(MENU_MTX_NOPUSH, 0, (f32) gDialogScrollOffsetY, 0);
+        } else {
+            create_dl_translation_matrix(MENU_MTX_NOPUSH, 0, (f32) gDialogScrollOffsetY+dialog->linesPerBox, 0);
+        }
     }
 
     create_dl_translation_matrix(MENU_MTX_PUSH, X_VAL3, 2 - lineNum * Y_VAL3, 0);
@@ -1164,11 +1170,24 @@ void render_dialog_entries(void) {
                 gDialogBoxGfxScale -= 2.0f * gFrameLerpDeltaTime;
             }
 
+            if (gDialogBoxGfxScale <= 1.0f) {
+                gDialogBoxGfxScale = 1.0f;
+            }
+            if (gDialogBoxGfxOpenTimer < 0.0f) {
+                gDialogBoxGfxOpenTimer = 0.0f;
+            }
             lowerBound = 1;
             break;
 
         case DIALOG_STATE_VERTICAL:
             gDialogBoxGfxOpenTimer = 0.0f;
+
+            gDialogGfxScrollOffsetY += (dialog->linesPerBox * 2);
+
+            if (gDialogGfxScrollOffsetY >= dialog->linesPerBox * DIAG_VAL1) {
+                gDialogGfxScrollOffsetY = 0;
+            }
+
             lowerBound = 1;
             break;
         case DIALOG_STATE_HORIZONTAL: // scrolling
@@ -1283,6 +1302,9 @@ void logic_dialog_entries(void) {
                 gLastDialogResponse = 0;
                 gLastDialogPageStrPos = 0;
                 gDialogResponse = DIALOG_RESPONSE_NONE;
+
+                gDialogBoxGfxOpenTimer = 19.0f;
+                gDialogBoxGfxScale = 19.0f;
             }
             break;
     }
