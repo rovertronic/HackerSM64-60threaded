@@ -38,3 +38,12 @@ f32 * frameLerpRot(Quat rot, Quat lerpValue) {
     }
     return lerpValue;
 }
+
+f32 frameLerpFloat(f32 f, f32 lerpValue) {
+    if (gFrameLerpRenderFrame == FRAMELERP_NORMAL) {
+        return f;
+    } else {
+        return f + (lerpValue - f)*.5f;
+    }
+    return lerpValue;
+}

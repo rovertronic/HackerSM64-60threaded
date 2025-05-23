@@ -14,5 +14,6 @@ enum enumFrameLerpRenderFrame {
 
 f32 * frameLerpPos(Vec3f pos, Vec3f lerpValue);
 f32 * frameLerpRot(Quat rot, Quat rotValue);
+f32 frameLerpFloat(f32 f, f32 lerpValue);
 
 #endif

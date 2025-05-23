@@ -283,6 +283,7 @@ struct GraphNodeScale *init_graph_node_scale(struct AllocOnlyPool *pool,
         init_scene_graph_node_links(&graphNode->node, GRAPH_NODE_TYPE_SCALE);
         SET_GRAPH_NODE_LAYER(graphNode->node.flags, drawingLayer);
         graphNode->scale = scale;
+        graphNode->scaleLerp = scale;
         graphNode->displayList = displayList;
     }
 

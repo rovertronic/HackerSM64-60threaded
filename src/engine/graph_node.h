@@ -285,6 +285,7 @@ struct GraphNodeScale {
     /*0x00*/ struct GraphNode node;
     /*0x14*/ void *displayList;
     /*0x18*/ f32 scale;
+             f32 scaleLerp;
 };
 
 /** GraphNode that draws a shadow under an object.

@@ -677,7 +677,9 @@ void geo_process_rotation(struct GraphNodeRotation *node) {
 void geo_process_scale(struct GraphNodeScale *node) {
     Vec3f scaleVec;
 
-    vec3f_set(scaleVec, node->scale, node->scale, node->scale);
+    node->scaleLerp = frameLerpFloat(node->scale,node->scaleLerp);
+
+    vec3f_set(scaleVec, node->scaleLerp, node->scaleLerp, node->scaleLerp);
     mtxf_scale_vec3f(gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex], scaleVec);
 
     inc_mat_stack();
@@ -968,7 +970,7 @@ void geo_process_shadow(struct GraphNodeShadow *node) {
             struct GraphNode *geo = node->node.children;
             f32 objScale = 1.0f;
             if (geo != NULL && geo->type == GRAPH_NODE_TYPE_SCALE) {
-                objScale = ((struct GraphNodeScale *) geo)->scale;
+                objScale = ((struct GraphNodeScale *) geo)->scaleLerp;
             }
 
             f32 animScale = gCurrAnimTranslationMultiplier * objScale;
