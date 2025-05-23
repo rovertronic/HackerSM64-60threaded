@@ -26,6 +26,7 @@
 #include "config.h"
 #include "puppycam2.h"
 #include "main.h"
+#include "frame_lerp.h"
 
 #ifdef VERSION_EU
 #undef LANGUAGE_FUNCTION
@@ -120,7 +121,9 @@ u8 gDialogCharWidths[256] = { // TODO: Is there a way to auto generate this?
 
 s8 gDialogBoxState = DIALOG_STATE_OPENING;
 f32 gDialogBoxOpenTimer = DEFAULT_DIALOG_BOX_ANGLE;
+f32 gDialogBoxGfxOpenTimer = DEFAULT_DIALOG_BOX_ANGLE;
 f32 gDialogBoxScale = DEFAULT_DIALOG_BOX_SCALE;
+f32 gDialogBoxGfxScale = DEFAULT_DIALOG_BOX_SCALE;
 s16 gDialogScrollOffsetY = 0;
 s8 gDialogBoxType = DIALOG_TYPE_ROTATE;
 s16 gDialogID = DIALOG_NONE;
@@ -742,7 +745,9 @@ void reset_dialog_render_state(void) {
     level_set_transition(0, NULL);
 
     gDialogBoxScale = 19.0f;
+    gDialogBoxGfxScale = 19.0f;
     gDialogBoxOpenTimer = 90.0f;
+    gDialogBoxGfxOpenTimer = 90.0f;
     gDialogBoxState = DIALOG_STATE_OPENING;
     gDialogID = DIALOG_NONE;
     gDialogTextPos = 0;
@@ -758,16 +763,16 @@ void render_dialog_box_type(struct DialogEntry *dialog, s8 linesPerBox) {
         case DIALOG_TYPE_ROTATE: // Renders a dialog black box with zoom and rotation
             if ((gDialogBoxState == DIALOG_STATE_OPENING)
              || (gDialogBoxState == DIALOG_STATE_CLOSING)) {
-                create_dl_scale_matrix(MENU_MTX_NOPUSH, (1.0f / gDialogBoxScale), (1.0f / gDialogBoxScale), 1.0f);
+                create_dl_scale_matrix(MENU_MTX_NOPUSH, (1.0f / gDialogBoxGfxScale), (1.0f / gDialogBoxGfxScale), 1.0f);
                 // convert the speed into angle
-                create_dl_rotation_matrix(MENU_MTX_NOPUSH, (gDialogBoxOpenTimer * 4.0f), 0, 0, 1.0f);
+                create_dl_rotation_matrix(MENU_MTX_NOPUSH, (gDialogBoxGfxOpenTimer * 4.0f), 0, 0, 1.0f);
             }
             gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 150);
             break;
         case DIALOG_TYPE_ZOOM: // Renders a dialog white box with zoom
             if (gDialogBoxState == DIALOG_STATE_OPENING || gDialogBoxState == DIALOG_STATE_CLOSING) {
-                create_dl_translation_matrix(MENU_MTX_NOPUSH, (65.0f - (65.0f / gDialogBoxScale)), ((40.0f / gDialogBoxScale) - 40), 0);
-                create_dl_scale_matrix(MENU_MTX_NOPUSH, (1.0f / gDialogBoxScale), (1.0f / gDialogBoxScale), 1.0f);
+                create_dl_translation_matrix(MENU_MTX_NOPUSH, (65.0f - (65.0f / gDialogBoxGfxScale)), ((40.0f / gDialogBoxGfxScale) - 40), 0);
+                create_dl_scale_matrix(MENU_MTX_NOPUSH, (1.0f / gDialogBoxGfxScale), (1.0f / gDialogBoxGfxScale), 1.0f);
             }
             gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 150);
             break;
@@ -1151,70 +1156,30 @@ void render_dialog_entries(void) {
 
     switch (gDialogBoxState) {
         case DIALOG_STATE_OPENING:
-            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
-                play_dialog_sound(gDialogID);
-                play_sound(SOUND_MENU_MESSAGE_APPEAR, gGlobalSoundSource);
-            }
-
             if (gDialogBoxType == DIALOG_TYPE_ROTATE) {
-                gDialogBoxOpenTimer -= 7.5f;
-                gDialogBoxScale -= 1.5f;
+                gDialogBoxGfxOpenTimer -= 7.5f * gFrameLerpDeltaTime;
+                gDialogBoxGfxScale -= 1.5f * gFrameLerpDeltaTime;
             } else {
-                gDialogBoxOpenTimer -= 10.0f;
-                gDialogBoxScale -= 2.0f;
+                gDialogBoxGfxOpenTimer -= 10.0f * gFrameLerpDeltaTime;
+                gDialogBoxGfxScale -= 2.0f * gFrameLerpDeltaTime;
             }
 
-            if (gDialogBoxOpenTimer == 0.0f) {
-                gDialogBoxState = DIALOG_STATE_VERTICAL;
-                gDialogLineNum = 1;
-            }
             lowerBound = 1;
             break;
 
         case DIALOG_STATE_VERTICAL:
-            gDialogBoxOpenTimer = 0.0f;
-
-            if (gPlayer1Controller->buttonPressed & (A_BUTTON | B_BUTTON)) {
-                if (gLastDialogPageStrPos == -1) {
-                    handle_special_dialog_text(gDialogID);
-                    gDialogBoxState = DIALOG_STATE_CLOSING;
-                } else {
-                    gDialogBoxState = DIALOG_STATE_HORIZONTAL;
-                    play_sound(SOUND_MENU_MESSAGE_NEXT_PAGE, gGlobalSoundSource);
-                }
-            }
+            gDialogBoxGfxOpenTimer = 0.0f;
             lowerBound = 1;
             break;
         case DIALOG_STATE_HORIZONTAL: // scrolling
-            gDialogScrollOffsetY += (dialog->linesPerBox * 2);
 
-            if (gDialogScrollOffsetY >= dialog->linesPerBox * DIAG_VAL1) {
-                gDialogTextPos = gLastDialogPageStrPos;
-                gDialogBoxState = DIALOG_STATE_VERTICAL;
-                gDialogScrollOffsetY = 0;
-            }
             lowerBound = (gDialogScrollOffsetY / DIAG_VAL1) + 1;
             break;
 
         case DIALOG_STATE_CLOSING:
-            if (gDialogBoxOpenTimer == 20.0f) {
-                level_set_transition(0, NULL);
-                play_sound(SOUND_MENU_MESSAGE_DISAPPEAR, gGlobalSoundSource);
+            gDialogBoxGfxOpenTimer = gDialogBoxGfxOpenTimer + 10.0f * gFrameLerpDeltaTime;
+            gDialogBoxGfxScale = gDialogBoxGfxScale + 2.0f* gFrameLerpDeltaTime;
 
-                gDialogResponse = gDialogLineNum;
-            }
-
-            gDialogBoxOpenTimer = gDialogBoxOpenTimer + 10.0f;
-            gDialogBoxScale = gDialogBoxScale + 2.0f;
-
-            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
-                gDialogBoxState = DIALOG_STATE_OPENING;
-                gDialogID = DIALOG_NONE;
-                gDialogTextPos = 0;
-                gLastDialogResponse = 0;
-                gLastDialogPageStrPos = 0;
-                gDialogResponse = DIALOG_RESPONSE_NONE;
-            }
             lowerBound = 1;
             break;
     }
@@ -1243,6 +1208,83 @@ void render_dialog_entries(void) {
     gDPSetScissor(gDisplayListHead++, G_SC_NON_INTERLACE, 2, 2, SCREEN_WIDTH - gBorderHeight / 2, SCREEN_HEIGHT - gBorderHeight / 2);
     if (gLastDialogPageStrPos != -1 && gDialogBoxState == DIALOG_STATE_VERTICAL) {
         render_dialog_triangle_next(dialog->linesPerBox);
+    }
+}
+
+void logic_dialog_entries(void) {
+    void **dialogTable = segmented_to_virtual(languageTable[gInGameLanguage][0]);
+    struct DialogEntry *dialog = segmented_to_virtual(dialogTable[gDialogID]);
+
+    // if the dialog entry is invalid, set the ID to DIALOG_NONE.
+    if (segmented_to_virtual(NULL) == dialog) {
+        gDialogID = DIALOG_NONE;
+        return;
+    }
+
+    switch (gDialogBoxState) {
+        case DIALOG_STATE_OPENING:
+            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
+                play_dialog_sound(gDialogID);
+                play_sound(SOUND_MENU_MESSAGE_APPEAR, gGlobalSoundSource);
+            }
+
+            if (gDialogBoxType == DIALOG_TYPE_ROTATE) {
+                gDialogBoxOpenTimer -= 7.5f;
+                gDialogBoxScale -= 1.5f;
+            } else {
+                gDialogBoxOpenTimer -= 10.0f;
+                gDialogBoxScale -= 2.0f;
+            }
+
+            if (gDialogBoxOpenTimer == 0.0f) {
+                gDialogBoxState = DIALOG_STATE_VERTICAL;
+                gDialogLineNum = 1;
+            }
+            break;
+
+        case DIALOG_STATE_VERTICAL:
+            gDialogBoxOpenTimer = 0.0f;
+
+            if (gPlayer1Controller->buttonPressed & (A_BUTTON | B_BUTTON)) {
+                if (gLastDialogPageStrPos == -1) {
+                    handle_special_dialog_text(gDialogID);
+                    gDialogBoxState = DIALOG_STATE_CLOSING;
+                } else {
+                    gDialogBoxState = DIALOG_STATE_HORIZONTAL;
+                    play_sound(SOUND_MENU_MESSAGE_NEXT_PAGE, gGlobalSoundSource);
+                }
+            }
+            break;
+        case DIALOG_STATE_HORIZONTAL: // scrolling
+            gDialogScrollOffsetY += (dialog->linesPerBox * 2);
+
+            if (gDialogScrollOffsetY >= dialog->linesPerBox * DIAG_VAL1) {
+                gDialogTextPos = gLastDialogPageStrPos;
+                gDialogBoxState = DIALOG_STATE_VERTICAL;
+                gDialogScrollOffsetY = 0;
+            }
+            break;
+
+        case DIALOG_STATE_CLOSING:
+            if (gDialogBoxOpenTimer == 20.0f) {
+                level_set_transition(0, NULL);
+                play_sound(SOUND_MENU_MESSAGE_DISAPPEAR, gGlobalSoundSource);
+
+                gDialogResponse = gDialogLineNum;
+            }
+
+            gDialogBoxOpenTimer = gDialogBoxOpenTimer + 10.0f;
+            gDialogBoxScale = gDialogBoxScale + 2.0f;
+
+            if (gDialogBoxOpenTimer == DEFAULT_DIALOG_BOX_ANGLE) {
+                gDialogBoxState = DIALOG_STATE_OPENING;
+                gDialogID = DIALOG_NONE;
+                gDialogTextPos = 0;
+                gLastDialogResponse = 0;
+                gLastDialogPageStrPos = 0;
+                gDialogResponse = DIALOG_RESPONSE_NONE;
+            }
+            break;
     }
 }
 
@@ -1872,6 +1914,50 @@ s32 gCourseCompleteCoins = 0;
 s8 gHudFlash = HUD_FLASH_NONE;
 
 s32 render_pause_courses_and_castle(void) {
+#ifdef PUPPYCAM
+    puppycam_check_pause_buttons();
+    if (!gPCOptionOpen) {
+#endif
+    switch (gDialogBoxState) {
+        case DIALOG_STATE_VERTICAL:
+            shade_screen();
+            render_pause_my_score_coins();
+            render_pause_red_coins();
+#ifndef DISABLE_EXIT_COURSE
+#ifdef EXIT_COURSE_WHILE_MOVING
+            if ((gMarioStates[0].action & (ACT_FLAG_SWIMMING | ACT_FLAG_METAL_WATER | ACT_FLAG_PAUSE_EXIT))
+             || (gMarioStates[0].pos[1] <= gMarioStates[0].floorHeight)) {
+#else
+            if (gMarioStates[0].action & ACT_FLAG_PAUSE_EXIT) {
+#endif
+                render_pause_course_options(99, 93, &gDialogLineNum, 15);
+            }
+#endif
+            break;
+
+        case DIALOG_STATE_HORIZONTAL:
+            shade_screen();
+            print_hud_pause_colorful_str();
+            render_pause_castle_menu_box(160, 143);
+            render_pause_castle_main_strings(104, 60);
+            break;
+    }
+#if defined(WIDE) && !defined(PUPPYCAM)
+        render_widescreen_setting();
+#endif
+
+#ifdef PUPPYCAM
+    } else {
+        shade_screen();
+        puppycam_display_options();
+    }
+
+    puppycam_render_option_text();
+#endif
+    return MENU_OPT_NONE;
+}
+
+s32 logic_pause_courses_and_castle(void) {
     s16 index;
 
 #ifdef PUPPYCAM
@@ -1896,9 +1982,7 @@ s32 render_pause_courses_and_castle(void) {
             break;
 
         case DIALOG_STATE_VERTICAL:
-            shade_screen();
-            render_pause_my_score_coins();
-            render_pause_red_coins();
+        
 #ifndef DISABLE_EXIT_COURSE
 #ifdef EXIT_COURSE_WHILE_MOVING
             if ((gMarioStates[0].action & (ACT_FLAG_SWIMMING | ACT_FLAG_METAL_WATER | ACT_FLAG_PAUSE_EXIT))
@@ -1906,7 +1990,7 @@ s32 render_pause_courses_and_castle(void) {
 #else
             if (gMarioStates[0].action & ACT_FLAG_PAUSE_EXIT) {
 #endif
-                render_pause_course_options(99, 93, &gDialogLineNum, 15);
+                //render_pause_course_options(99, 93, &gDialogLineNum, 15);
             }
 #endif
 
@@ -1927,10 +2011,6 @@ s32 render_pause_courses_and_castle(void) {
             break;
 
         case DIALOG_STATE_HORIZONTAL:
-            shade_screen();
-            print_hud_pause_colorful_str();
-            render_pause_castle_menu_box(160, 143);
-            render_pause_castle_main_strings(104, 60);
 
             if (gPlayer1Controller->buttonPressed & (A_BUTTON | START_BUTTON)) {
                 level_set_transition(0, NULL);
@@ -1942,9 +2022,6 @@ s32 render_pause_courses_and_castle(void) {
             }
             break;
     }
-#if defined(WIDE) && !defined(PUPPYCAM)
-        render_widescreen_setting();
-#endif
     if (gDialogTextAlpha < 250) {
         gDialogTextAlpha += 25;
     }
@@ -2196,35 +2273,56 @@ s32 render_course_complete_screen(void) {
 }
 
 s32 render_menus_and_dialogs(void) {
-    s32 mode = MENU_OPT_NONE;
-
     create_dl_ortho_matrix();
 
     if (gMenuMode != MENU_MODE_NONE) {
         switch (gMenuMode) {
             case MENU_MODE_UNUSED_0:
-                mode = render_pause_courses_and_castle();
+                render_pause_courses_and_castle();
                 break;
             case MENU_MODE_RENDER_PAUSE_SCREEN:
-                mode = render_pause_courses_and_castle();
+                render_pause_courses_and_castle();
                 break;
             case MENU_MODE_RENDER_COURSE_COMPLETE_SCREEN:
-                mode = render_course_complete_screen();
+                render_course_complete_screen();
                 break;
             case MENU_MODE_UNUSED_3:
-                mode = render_course_complete_screen();
+                render_course_complete_screen();
+                break;
+        }
+
+        //gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
+    } else if (gDialogID != DIALOG_NONE) {
+        // The Peach "Dear Mario" message needs to be repositioned separately
+        if (gDialogID == DIALOG_020) {
+            print_peach_letter_message();
+            return 0;
+        }
+
+        render_dialog_entries();
+        //gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
+    }
+
+    return 0;
+}
+
+s32 logic_menus_and_dialogs(void) {
+    s32 mode = MENU_OPT_NONE;
+
+    if (gMenuMode != MENU_MODE_NONE) {
+        switch (gMenuMode) {
+            case MENU_MODE_RENDER_PAUSE_SCREEN:
+                mode = logic_pause_courses_and_castle();
+                break;
+            case MENU_MODE_RENDER_COURSE_COMPLETE_SCREEN:
+                //mode = render_course_complete_screen();
                 break;
         }
 
         gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
     } else if (gDialogID != DIALOG_NONE) {
         // The Peach "Dear Mario" message needs to be repositioned separately
-        if (gDialogID == DIALOG_020) {
-            print_peach_letter_message();
-            return mode;
-        }
-
-        render_dialog_entries();
+        logic_dialog_entries();
         gDialogColorFadeTimer = (s16) gDialogColorFadeTimer + 0x1000;
     }
 
