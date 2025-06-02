@@ -663,7 +663,13 @@ void geo_process_translation(struct GraphNodeTranslation *node) {
  * For the rest it acts as a normal display list node.
  */
 void geo_process_rotation(struct GraphNodeRotation *node) {
-    mtxf_rotate_zxy_and_translate_and_mul(node->rotation, gVec3fZero, gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex]);
+    Quat rot;
+    quat_from_zxy_euler(rot,node->rotation);
+    frameLerpRot(rot,node->rotLerp);
+
+    Mat4 final;
+    mtxf_from_quat(node->rotLerp,final);
+    mtxf_mul(gMatStack[gMatStackIndex + 1],final,gMatStack[gMatStackIndex]);
 
     inc_mat_stack();
     append_dl_and_return(((struct GraphNodeDisplayList *)node));

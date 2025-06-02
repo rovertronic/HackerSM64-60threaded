@@ -238,6 +238,7 @@ struct GraphNodeRotation {
     /*0x00*/ struct GraphNode node;
     /*0x14*/ void *displayList;
     /*0x18*/ Vec3s rotation;
+             Quat rotLerp;
     // u8 filler[2];
 };
 
