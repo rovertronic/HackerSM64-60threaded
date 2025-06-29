@@ -995,6 +995,7 @@ void geo_process_shadow(struct GraphNodeShadow *node) {
             shadowPos[2] += -animOffset[0] * sinAng + animOffset[2] * cosAng;
         }
 
+        u32 mask = __osDisableInt();
         Gfx *shadowList = create_shadow_below_xyz(shadowPos, shadowScale * 0.5f,
                                                   node->shadowSolidity, node->shadowType, shifted);
 
@@ -1010,6 +1011,7 @@ void geo_process_shadow(struct GraphNodeShadow *node) {
 
             gMatStackIndex--;
         }
+        __osRestoreInt(mask);
     }
 #endif
     if (node->node.children != NULL) {
