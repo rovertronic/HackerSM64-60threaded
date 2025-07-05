@@ -846,7 +846,6 @@ void thread5_game_loop(UNUSED void *arg) {
     }
 }
 
-f32 gDeltaProgress = 0.f;
 void thread10_graphics_loop(UNUSED void *arg) {
     u32 lastRenderedFrame = 0xFFFFFFFF;
     u32 prevTime = 0;
@@ -861,9 +860,7 @@ void thread10_graphics_loop(UNUSED void *arg) {
         prevTime = osGetCount();
         gFrameLerpDeltaTime = (f32)deltaTime/(f32)OS_USEC_TO_CYCLES(33333);
         gDeltaProgress += gFrameLerpDeltaTime;
-        if (gDeltaProgress > 1.0) {
-            gDeltaProgress -= 1.0f;
-        }
+        gDeltaProgress = gDeltaProgress - (int)gDeltaProgress;
 
         if (deltaTime < OS_USEC_TO_CYCLES(33333)) { // > 30 fps
             if (gGlobalTimer == lastRenderedFrame + 1) {

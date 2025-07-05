@@ -4,6 +4,7 @@
 
 u32 gFrameLerpRenderFrame;
 f32 gFrameLerpDeltaTime;
+f32 gDeltaProgress = 0.0f;
 
 f32 * frameLerpPos(Vec3f pos, Vec3f lerpValue) {
     f32 dsq; vec3f_get_dist_squared(pos,lerpValue,&dsq);

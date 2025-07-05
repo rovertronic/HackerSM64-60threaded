@@ -5,6 +5,7 @@
 
 extern u32 gFrameLerpRenderFrame;
 extern f32 gFrameLerpDeltaTime;
+extern f32 gDeltaProgress;
 
 enum enumFrameLerpRenderFrame {
     FRAMELERP_NORMAL,
