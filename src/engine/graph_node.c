@@ -190,6 +190,8 @@ struct GraphNodeCamera *init_graph_node_camera(struct AllocOnlyPool *pool,
         vec3f_copy(graphNode->focus, focus);
         vec3f_copy(graphNode->posLerp, pos);
         vec3f_copy(graphNode->focLerp, focus);
+        vec3f_copy(graphNode->posCache, pos);
+        vec3f_copy(graphNode->focusCache, focus);
         graphNode->fnNode.func = func;
         graphNode->config.mode = mode;
         graphNode->roll = 0;

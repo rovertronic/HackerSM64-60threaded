@@ -48,3 +48,20 @@ f32 frameLerpFloat(f32 f, f32 lerpValue) {
     }
     return lerpValue;
 }
+
+f32 * sCachedPosUpdateRealList[1000];
+f32 * sCachedPosUpdateCacheList[1000];
+int sCachedPosCt = 0;
+
+void frameLerp_cache_pos(f32 * realPosPtr, f32 * cachePosPtr) {
+    sCachedPosUpdateRealList[sCachedPosCt] = realPosPtr;
+    sCachedPosUpdateCacheList[sCachedPosCt] = cachePosPtr;
+    sCachedPosCt ++;
+}
+
+void frameLerp_update_pos_cache(void) {
+    for (int i = 0; i < sCachedPosCt; i++) {
+        vec3f_copy( sCachedPosUpdateCacheList[i], sCachedPosUpdateRealList[i] );
+    }
+    sCachedPosCt = 0;
+} 

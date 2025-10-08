@@ -579,7 +579,9 @@ void geo_process_camera(struct GraphNodeCamera *node) {
 
     gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(rollMtx), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 
-    mtxf_lookat(gCameraTransform, frameLerpPos(node->pos,node->posLerp), frameLerpPos(node->focus,node->focLerp), node->roll);
+    frameLerp_cache_pos(node->pos,node->posCache);
+    frameLerp_cache_pos(node->focus,node->focusCache);
+    mtxf_lookat(gCameraTransform, frameLerpPos(node->posCache,node->posLerp), frameLerpPos(node->focusCache,node->focLerp), node->roll);
     vec3f_copy(gSkyboxCameraPos,node->posLerp);
     vec3f_copy(gSkyboxCameraFoc,node->focLerp);
 

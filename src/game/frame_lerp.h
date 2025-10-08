@@ -16,4 +16,8 @@ f32 * frameLerpPos(Vec3f pos, Vec3f lerpValue);
 f32 * frameLerpRot(Quat rot, Quat rotValue);
 f32 frameLerpFloat(f32 f, f32 lerpValue);
 
+void frameLerp_cache_pos(f32 * realPosPtr, f32 * cachePosPtr);
+void frameLerp_update_pos_cache(void);
+
+
 #endif
