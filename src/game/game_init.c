@@ -109,6 +109,7 @@ u8 sSingleThreadOtherFrame = FALSE;
 u8 sSingleThreaded = FALSE;
 u8 sFrameCap60 = TRUE;
 u8 sVideoThreadStarted = FALSE;
+u8 gLevelChangeSpinlockState = 0;
 
 // Display
 // ----------------------------------------------------------------------------------------------------
@@ -856,6 +857,7 @@ void thread5_game_loop(UNUSED void *arg) {
             if (!sSingleThreaded) {
                 sSingleThreadOtherFrame = TRUE;
                 osStartThread(&gGraphicsThread);
+                gLevelChangeSpinlockState = 1;
             } else {
                 // Single threaded mode for emulators
                 osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
@@ -916,6 +918,13 @@ void thread10_graphics_loop(UNUSED void *arg) {
 
     render_init();
     while (gResetTimer == 0) {
+        if (gLevelChangeSpinlockState == 2) {
+            gLevelChangeSpinlockState = 3;
+            while(gLevelChangeSpinlockState == 3){
+                osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+            }
+        }
+
         u32 deltaTime = osGetCount() - prevTime;
         prevTime = osGetCount();
         gFrameLerpDeltaTime = (f32)deltaTime/(f32)OS_USEC_TO_CYCLES(33333);
