@@ -192,6 +192,8 @@ struct GraphNodeCamera *init_graph_node_camera(struct AllocOnlyPool *pool,
         vec3f_copy(graphNode->focLerp, focus);
         vec3f_copy(graphNode->posCache, pos);
         vec3f_copy(graphNode->focusCache, focus);
+        vec3f_copy(graphNode->posVideoCache, pos);
+        vec3f_copy(graphNode->focusVideoCache, focus);
         graphNode->fnNode.func = func;
         graphNode->config.mode = mode;
         graphNode->roll = 0;
@@ -307,6 +309,8 @@ struct GraphNodeObject *init_graph_node_object(struct AllocOnlyPool *pool,
         init_scene_graph_node_links(&graphNode->node, GRAPH_NODE_TYPE_OBJECT);
         vec3f_copy(graphNode->pos, pos);
         vec3f_copy(graphNode->posLerp, pos);
+        vec3f_copy(graphNode->posCache, pos);
+        vec3f_copy(graphNode->posVideoCache, pos);
         vec3f_copy(graphNode->scale, scale);
         vec3s_copy(graphNode->angle, angle);
         vec3f_copy(graphNode->scaleLerp, scale);
@@ -714,6 +718,8 @@ void geo_obj_init(struct GraphNodeObject *graphNode, void *sharedChild, Vec3f po
 
     quat_from_zxy_euler(graphNode->rotLerp,angle);
     vec3f_copy(graphNode->posLerp, pos);
+    vec3f_copy(graphNode->posCache, pos);
+    vec3f_copy(graphNode->posVideoCache, pos);
 
     graphNode->sharedChild = sharedChild;
     graphNode->spawnInfo = 0;

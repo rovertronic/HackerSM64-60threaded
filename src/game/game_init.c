@@ -106,7 +106,7 @@ struct DemoInput gRecordedDemoInput = { 0 };
 
 // Thread Variables
 u8 sSingleThreadOtherFrame = FALSE;
-u8 sSingleThreaded = FALSE;
+u8 sSingleThreaded = TRUE;
 u8 sFrameCap60 = TRUE;
 u8 sVideoThreadStarted = FALSE;
 u8 gLevelChangeSpinlockState = 0;
@@ -826,6 +826,7 @@ void thread5_game_loop(UNUSED void *arg) {
             profiler_update(PROFILER_TIME_CONTROLLERS, 0);
             profiler_collision_reset();
             addr = level_script_execute(addr);
+            frameLerp_update_pos_cache();
             profiler_collision_completed();
 #if !defined(PUPPYPRINT_DEBUG) && defined(VISUAL_DEBUG)
             debug_box_input();
@@ -877,6 +878,7 @@ void thread5_game_loop(UNUSED void *arg) {
                 gFrameLerpRenderFrame = FRAMELERP_NORMAL;
                 gFrameLerpDeltaTime = 1.0f;
             }
+            frameLerp_update_pos_video_cache();
 
             // Render
             select_gfx_pool();
@@ -901,7 +903,6 @@ void thread5_game_loop(UNUSED void *arg) {
         } else {
             sSingleThreadOtherFrame = TRUE;
 
-            frameLerp_update_pos_cache();
             osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
             osRecvMesg(&gGameVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
         }
@@ -924,6 +925,7 @@ void thread10_graphics_loop(UNUSED void *arg) {
                 osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
             }
         }
+        frameLerp_update_pos_video_cache();
 
         u32 deltaTime = osGetCount() - prevTime;
         prevTime = osGetCount();
@@ -934,12 +936,6 @@ void thread10_graphics_loop(UNUSED void *arg) {
                 gFrameLerpRenderFrame = FRAMELERP_NORMAL;
             } else {
                 gFrameLerpRenderFrame = FRAMELERP_BETWEEN;
-            }
-        } else if (deltaTime > OS_USEC_TO_CYCLES(66666)) { // < 15fps
-            if (gGlobalTimer == lastRenderedFrame + 1) {
-                gFrameLerpRenderFrame = FRAMELERP_SLOW;
-            } else {
-                gFrameLerpRenderFrame = FRAMELERP_NORMAL;
             }
         } else {
             gFrameLerpRenderFrame = FRAMELERP_NORMAL;

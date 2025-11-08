@@ -248,6 +248,8 @@ struct GraphNodeObject {
     /*0x1A*/ Vec3s angle;
     /*0x20*/ Vec3f pos;
     /*0x2C*/ Vec3f scale;
+             Vec3f posCache;
+             Vec3f posVideoCache;
              Vec3f posLerp;
              Vec3f translationLerp;
              Vec3f scaleLerp;

@@ -699,6 +699,11 @@ struct LakituState {
     /// Mario's action from the previous frame. Only used to determine if Mario just finished a dive.
     /*0xB8*/ u32 lastFrameAction;
     /*0xBC*/ s16 unused;
+
+            Vec3f cachePos;
+            Vec3f cacheFoc;
+            Vec3f cacheVideoPos;
+            Vec3f cacheVideoFoc;
 };
 
 // BSS

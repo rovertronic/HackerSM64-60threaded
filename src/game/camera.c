@@ -28,6 +28,7 @@
 #include "config.h"
 #include "puppyprint.h"
 #include "profiling.h"
+#include "frame_lerp.h"
 
 #define CBUTTON_MASK (U_CBUTTONS | D_CBUTTONS | L_CBUTTONS | R_CBUTTONS)
 
@@ -2864,6 +2865,9 @@ void update_lakitu(struct Camera *c) {
     clamp_pitch(gLakituState.pos, gLakituState.focus, 0x3E00, -0x3E00);
     gLakituState.mode = c->mode;
     gLakituState.defMode = c->defMode;
+
+    frameLerp_cache_pos(gLakituState.pos,gLakituState.cachePos,gLakituState.cacheVideoPos);
+    frameLerp_cache_pos(gLakituState.focus,gLakituState.cacheFoc,gLakituState.cacheVideoFoc);
 }
 
 /**
@@ -3419,6 +3423,10 @@ void update_graph_node_camera(struct GraphNodeCamera *gc) {
     gc->rollScreen = gLakituState.roll;
     vec3f_copy(gc->pos, gLakituState.pos);
     vec3f_copy(gc->focus, gLakituState.focus);
+    vec3f_copy(gc->posCache, gLakituState.cachePos);
+    vec3f_copy(gc->focusCache, gLakituState.cacheFoc);
+    vec3f_copy(gc->posVideoCache, gLakituState.cacheVideoPos);
+    vec3f_copy(gc->focusVideoCache, gLakituState.cacheVideoFoc);
     zoom_out_if_paused_and_outside(gc);
 }
 
