@@ -909,6 +909,8 @@ void thread5_game_loop(UNUSED void *arg) {
     }
 }
 
+int sDontHangOnFirstFrameHack = 0;
+
 void thread10_graphics_loop(UNUSED void *arg) {
     u32 lastRenderedFrame = 0xFFFFFFFF;
     u32 prevTime = 0;
@@ -919,10 +921,16 @@ void thread10_graphics_loop(UNUSED void *arg) {
 
     render_init();
     while (gResetTimer == 0) {
-        if (gLevelChangeSpinlockState == 2) {
+        if (sDontHangOnFirstFrameHack == 0) {
+            // If you remove this, the screen will flash pure white for one frame on init
+            sDontHangOnFirstFrameHack = 1;
             gLevelChangeSpinlockState = 3;
-            while(gLevelChangeSpinlockState == 3){
-                osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+        } else {
+            if (gLevelChangeSpinlockState == 2) {
+                gLevelChangeSpinlockState = 3;
+                while(gLevelChangeSpinlockState == 3){
+                    osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+                }
             }
         }
         frameLerp_update_pos_video_cache();
