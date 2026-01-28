@@ -2234,8 +2234,6 @@ void render_save_confirmation(s16 x, s16 y, s8 *index, s16 yPos) {
     u8 textSaveAndQuit[] = { TEXT_SAVE_AND_QUIT };
     u8 textContinueWithoutSave[] = { TEXT_CONTINUE_WITHOUT_SAVING };
 
-    handle_menu_scrolling(MENU_SCROLL_VERTICAL, index, 1, 3);
-
     gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
 
@@ -2257,6 +2255,25 @@ s32 render_course_complete_screen(void) {
     switch (gDialogBoxState) {
         case DIALOG_STATE_OPENING:
             render_course_complete_lvl_info_and_hud_str();
+            break;
+
+        case DIALOG_STATE_VERTICAL:
+            shade_screen();
+            render_course_complete_lvl_info_and_hud_str();
+            render_save_confirmation(100, 86, &gDialogLineNum, 20);
+            break;
+    }
+
+    if (gDialogTextAlpha < 250) {
+        gDialogTextAlpha += 25;
+    }
+
+    return MENU_OPT_NONE;
+}
+
+s32 logic_course_complete_screen(void) {
+    switch (gDialogBoxState) {
+        case DIALOG_STATE_OPENING:
             if (gCourseDoneMenuTimer > 100 && gCourseCompleteCoinsEqual) {
                 gDialogBoxState = DIALOG_STATE_VERTICAL;
                 level_set_transition(-1, NULL);
@@ -2266,9 +2283,7 @@ s32 render_course_complete_screen(void) {
             break;
 
         case DIALOG_STATE_VERTICAL:
-            shade_screen();
-            render_course_complete_lvl_info_and_hud_str();
-            render_save_confirmation(100, 86, &gDialogLineNum, 20);
+            handle_menu_scrolling(MENU_SCROLL_VERTICAL, &gDialogLineNum, 1, 3);
 
             if (gCourseDoneMenuTimer > 110 && (gPlayer1Controller->buttonPressed & (A_BUTTON | START_BUTTON))) {
                 level_set_transition(0, NULL);
@@ -2283,10 +2298,6 @@ s32 render_course_complete_screen(void) {
                 return gDialogLineNum;
             }
             break;
-    }
-
-    if (gDialogTextAlpha < 250) {
-        gDialogTextAlpha += 25;
     }
 
     gCourseDoneMenuTimer++;
@@ -2337,7 +2348,7 @@ s32 logic_menus_and_dialogs(void) {
                 mode = logic_pause_courses_and_castle();
                 break;
             case MENU_MODE_RENDER_COURSE_COMPLETE_SCREEN:
-                //mode = render_course_complete_screen();
+                mode = logic_course_complete_screen();
                 break;
         }
 
