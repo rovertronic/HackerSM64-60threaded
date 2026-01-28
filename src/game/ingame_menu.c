@@ -1623,10 +1623,6 @@ void render_widescreen_setting(void) {
         print_generic_string(10,  7, textPressL);
     }
     gSPDisplayList(gDisplayListHead++, dl_ia_text_end);
-    if (gPlayer1Controller->buttonPressed & L_TRIG){
-        gConfig.widescreen ^= 1;
-        save_file_set_widescreen_mode(gConfig.widescreen);
-    }
 }
 #endif
 
@@ -1754,8 +1750,6 @@ void render_pause_course_options(s16 x, s16 y, s8 *index, s16 yIndex) {
     u8 textExitCourse[] = { TEXT_EXIT_COURSE };
     u8 textCameraAngleR[] = { TEXT_CAMERA_ANGLE_R };
 
-    handle_menu_scrolling(MENU_SCROLL_VERTICAL, index, 1, 3);
-
     gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
 
@@ -1873,37 +1867,6 @@ void render_pause_castle_main_strings(s16 x, s16 y) {
     void *courseName;
 
     u8 strVal[8];
-    s16 prevCourseIndex = gDialogLineNum;
-
-
-    handle_menu_scrolling(
-        MENU_SCROLL_VERTICAL, &gDialogLineNum,
-        COURSE_NUM_TO_INDEX(COURSE_MIN) - 1, COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES) + 1
-    );
-
-    if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES) + 1) {
-        gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_MIN); // Exceeded max, set to min
-    }
-
-    if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_MIN) - 1) {
-        gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES); // Exceeded min, set to max
-    }
-
-    if (gDialogLineNum != COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES)) {
-        while (save_file_get_course_star_count(gCurrSaveFileNum - 1, gDialogLineNum) == 0) {
-            if (gDialogLineNum >= prevCourseIndex) {
-                gDialogLineNum++;
-            } else {
-                gDialogLineNum--;
-            }
-
-            if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_STAGES_MAX) + 1
-             || gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_MIN) - 1) {
-                gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES);
-                break;
-            }
-        }
-    }
 
     gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
@@ -1982,6 +1945,13 @@ s32 render_pause_courses_and_castle(void) {
 s32 logic_pause_courses_and_castle(void) {
     s16 index;
 
+#if defined(WIDE)
+    if (gPlayer1Controller->buttonPressed & L_TRIG){
+        gConfig.widescreen ^= 1;
+        save_file_set_widescreen_mode(gConfig.widescreen);
+    }
+#endif
+
 #ifdef PUPPYCAM
     puppycam_check_pause_buttons();
     if (!gPCOptionOpen) {
@@ -2004,7 +1974,8 @@ s32 logic_pause_courses_and_castle(void) {
             break;
 
         case DIALOG_STATE_VERTICAL:
-        
+            
+            handle_menu_scrolling(MENU_SCROLL_VERTICAL, &gDialogLineNum, 1, 3);
 #ifndef DISABLE_EXIT_COURSE
 #ifdef EXIT_COURSE_WHILE_MOVING
             if ((gMarioStates[0].action & (ACT_FLAG_SWIMMING | ACT_FLAG_METAL_WATER | ACT_FLAG_PAUSE_EXIT))
@@ -2032,7 +2003,37 @@ s32 logic_pause_courses_and_castle(void) {
             }
             break;
 
-        case DIALOG_STATE_HORIZONTAL:
+        case DIALOG_STATE_HORIZONTAL:;
+            s16 prevCourseIndex = gDialogLineNum;
+
+            handle_menu_scrolling(
+                MENU_SCROLL_VERTICAL, &gDialogLineNum,
+                COURSE_NUM_TO_INDEX(COURSE_MIN) - 1, COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES) + 1
+            );
+
+            if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES) + 1) {
+                gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_MIN); // Exceeded max, set to min
+            }
+
+            if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_MIN) - 1) {
+                gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES); // Exceeded min, set to max
+            }
+
+            if (gDialogLineNum != COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES)) {
+                while (save_file_get_course_star_count(gCurrSaveFileNum - 1, gDialogLineNum) == 0) {
+                    if (gDialogLineNum >= prevCourseIndex) {
+                        gDialogLineNum++;
+                    } else {
+                        gDialogLineNum--;
+                    }
+
+                    if (gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_STAGES_MAX) + 1
+                    || gDialogLineNum == COURSE_NUM_TO_INDEX(COURSE_MIN) - 1) {
+                        gDialogLineNum = COURSE_NUM_TO_INDEX(COURSE_BONUS_STAGES);
+                        break;
+                    }
+                }
+            }
 
             if (gPlayer1Controller->buttonPressed & (A_BUTTON | START_BUTTON)) {
                 level_set_transition(0, NULL);
