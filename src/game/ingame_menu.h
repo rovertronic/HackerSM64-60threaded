@@ -147,6 +147,7 @@ extern u16 gDialogTextAlpha;
 extern s16 gCutsceneMsgXOffset;
 extern s16 gCutsceneMsgYOffset;
 extern s8  gRedCoinsCollected;
+extern s16 gMenuMode;
 
 void create_dl_identity_matrix(void);
 void create_dl_translation_matrix(s8 pushOp, f32 x, f32 y, f32 z);
