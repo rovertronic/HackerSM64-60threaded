@@ -918,7 +918,6 @@ void geo_set_animation_globals(struct AnimInfo *node, s32 hasAnimation, struct O
     }
 
     if (hasAnimation) {
-        node->animFrame = geo_update_animation_frame(node, &node->animFrameAccelAssist);
         if (gMenuMode != MENU_MODE_RENDER_PAUSE_SCREEN) {
             node->animFrameF = geo_update_animation_frame_float(node);
         }
