@@ -125,6 +125,7 @@ extern s16 sCameraSoundFlags;
 extern u16 sCButtonsPressed;
 extern s16 sCutsceneDialogID;
 extern struct LakituState gLakituState;
+u8 gCameraSnap = FALSE;
 extern s16 sAreaYaw;
 extern s16 sAreaYawChange;
 extern s16 sLakituDist;
@@ -3428,6 +3429,14 @@ void update_graph_node_camera(struct GraphNodeCamera *gc) {
     vec3f_copy(gc->posVideoCache, gLakituState.cacheVideoPos);
     vec3f_copy(gc->focusVideoCache, gLakituState.cacheVideoFoc);
     zoom_out_if_paused_and_outside(gc);
+	
+	if (gCameraSnap) {
+        vec3f_copy(gc->posLerp, gc->pos);
+        vec3f_copy(gc->focLerp, gc->focus);
+        vec3f_copy(gc->posVideoCache, gc->pos);
+        vec3f_copy(gc->focusVideoCache, gc->focus);
+        gCameraSnap = FALSE;
+    }
 }
 
 Gfx *geo_camera_main(s32 callContext, struct GraphNode *g, void *context) {
