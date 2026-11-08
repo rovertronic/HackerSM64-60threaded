@@ -551,7 +551,11 @@ void check_instant_warp(void) {
             struct InstantWarp *warp = &gCurrentArea->instantWarps[index];
 
             if (warp->id != 0) {
-                osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK); //TODO: Are we sure this is really thread safe?
+                // thread10 also consumes gGraphicsVblankQueue, and it is never
+                // started in single-threaded mode, so this would block forever.
+                if (!gSingleThreaded) {
+                    osRecvMesg(&gGraphicsVblankQueue, &gMainReceivedMesg, OS_MESG_BLOCK);
+                }
 
                 gMarioState->pos[0] += warp->displacement[0];
                 gMarioState->pos[1] += warp->displacement[1];
@@ -565,6 +569,11 @@ void check_instant_warp(void) {
                 gMarioObject->header.gfx.pos[0] = gMarioState->pos[0];
                 gMarioObject->header.gfx.pos[1] = gMarioState->pos[1];
                 gMarioObject->header.gfx.pos[2] = gMarioState->pos[2];
+				
+				// Snap the interpolation state so the renderer doesn't smear
+                // Mario across the warp for a frame.
+                vec3f_copy(gMarioObject->header.gfx.posLerp, gMarioState->pos);
+                vec3f_copy(gMarioObject->header.gfx.posVideoCache, gMarioState->pos);
 
                 cameraAngle = gMarioState->area->camera->yaw;
 
@@ -572,6 +581,7 @@ void check_instant_warp(void) {
                 gMarioState->area = gCurrentArea;
 
                 warp_camera(warp->displacement[0], warp->displacement[1], warp->displacement[2]);
+				gCameraSnap = TRUE;
 
                 gMarioState->area->camera->yaw = cameraAngle;
             }

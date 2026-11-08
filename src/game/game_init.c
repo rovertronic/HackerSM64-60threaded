@@ -106,7 +106,7 @@ struct DemoInput gRecordedDemoInput = { 0 };
 
 // Thread Variables
 u8 sSingleThreadOtherFrame = FALSE;
-u8 sSingleThreaded = TRUE;
+u8 gSingleThreaded = TRUE;
 u8 sFrameCap60 = TRUE;
 u8 sVideoThreadStarted = FALSE;
 u8 gLevelChangeSpinlockState = 0;
@@ -847,7 +847,7 @@ void thread5_game_loop(UNUSED void *arg) {
         }
 
         if (gEmulator & (EMU_CONSOLE|EMU_ARES)) {
-            sSingleThreaded = FALSE;
+            gSingleThreaded = FALSE;
             if (gEmulator & EMU_ARES) {
                 sFrameCap60 = FALSE; // Ares flickers at 60HZ for some reason
             }
@@ -855,7 +855,7 @@ void thread5_game_loop(UNUSED void *arg) {
 
         if (!sVideoThreadStarted) {
             sVideoThreadStarted=TRUE;
-            if (!sSingleThreaded) {
+            if (!gSingleThreaded) {
                 sSingleThreadOtherFrame = TRUE;
                 osStartThread(&gGraphicsThread);
                 gLevelChangeSpinlockState = 1;
@@ -867,7 +867,7 @@ void thread5_game_loop(UNUSED void *arg) {
             }
         }
 
-        if (sSingleThreaded) {
+        if (gSingleThreaded) {
             if (sFrameCap60) {
                 gFrameLerpRenderFrame = FRAMELERP_NORMAL;
                 if (sSingleThreadOtherFrame) {
